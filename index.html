@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyFlix | Premium Streaming</title>
+
+    <!-- iOS / PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyFlix">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- 1. NAVIGATION -->
+    <nav class="top-nav" id="navbar">
+        <div style="display: flex; align-items: center;">
+            <div class="logo-container" onclick="location.reload()">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-play"></i>
+                </div>
+                <span class="logo-text">MYFLIX</span>
+            </div>
+
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link active">Home</a>
+                <a href="explore.html?type=movie&category=now_playing" class="nav-link">Movies</a>
+                <a href="explore.html?type=tv&category=on_the_air" class="nav-link">TV Shows</a>
+                <a href="explore.html?type=multi&category=korean" class="nav-link">Korean</a>
+                <a href="explore.html?type=multi&category=chinese" class="nav-link">Chinese</a>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center;">
+            <div class="search-container" style="position: relative;">
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass" onclick="focusSearch()"></i>
+                    <input type="text" id="movie-search" placeholder="Search movies, TV shows..."
+                        oninput="searchMovies()" autocomplete="off">
+                </div>
+                <!-- Premium Live Search Dropdown -->
+                <div id="search-dropdown" class="search-results-dropdown"></div>
+            </div>
+
+            <div id="user-profile-btn" class="profile-circle">
+                <i id="logged-out-icon" class="fa-regular fa-user"></i>
+                <div id="avatar-container">
+                    <img id="logged-in-avatar" src="" alt="Avatar">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. IMMERSIVE HERO -->
+    <header class="hero-container">
+        <div class="hero-bg" id="hero-bg">
+            <!-- Dynamic Image injected here -->
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+            <div class="hero-badges">
+                <span id="hero-badge" class="badge">
+                    <i class="fa-solid fa-crown"></i> Loading...
+                </span>
+                <span id="hero-rating-badge" class="badge rating-badge">
+                    <!-- Rating info -->
+                </span>
+                <span id="hero-type-badge" class="badge"
+                    style="background: rgba(255,255,255,0.1); border-left: none; color: #aaa;">
+                    <!-- Movie/TV badge -->
+                </span>
+                <span id="hero-lang-badge" class="badge"
+                    style="background: linear-gradient(45deg, var(--accent-gold), var(--accent-amber)); color: black; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);">
+                    <!-- Region badge -->
+                </span>
+            </div>
+            <h1 id="hero-title">Loading...</h1>
+            <p id="hero-desc" class="hero-desc">...</p>
+
+            <div class="hero-buttons">
+                <button id="hero-play-btn" class="btn btn-primary">
+                    <i class="fa-solid fa-play"></i> Play
+                </button>
+                <button id="hero-info-btn" class="btn btn-secondary">
+                    <i class="fa-solid fa-circle-info"></i> More Info
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-indicators" id="hero-indicators">
+            <!-- Dynamic indicators injected here -->
+        </div>
+    </header>
+
+    <!-- 3. MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- Main Content for Home -->
+        <div id="home-content">
+            <div class="section-separator hero-separator"></div>
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-film"></i> New Releases</h2>
+                    <a href="explore.html?type=movie&category=now_playing" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="new-releases-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-fire"></i> Trending Now</h2>
+                    <a href="explore.html?type=movie&category=popular" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="movie-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-tv"></i> TV Shows On Air</h2>
+                    <a href="explore.html?type=tv&category=on_the_air" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="new-tv-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-ranking-star"></i> Popular TV Shows</h2>
+                    <a href="explore.html?type=tv&category=top_rated" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="tv-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-earth-asia"></i> Korean Movies & Shows</h2>
+                    <a href="explore.html?type=multi&category=korean" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="korean-combined-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-dragon"></i> Chinese Movies & Shows</h2>
+                    <a href="explore.html?type=multi&category=chinese" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="chinese-combined-row" class="shelf"></div>
+            </div>
+        </div> <!-- End home-content -->
+    </main>
+
+    <!-- 4. PLAYER OVERLAY -->
+    <div id="player-overlay" class="overlay">
+        <button class="close-btn" onclick="closePlayer()">✕</button>
+        <iframe id="video-iframe" src="" frameborder="0" allowfullscreen></iframe>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="config.js?v=2"></script>
+    <script type="module" src="script.js?v=2"></script>
+
+    <script>
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+
+</html>

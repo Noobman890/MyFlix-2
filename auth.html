@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyFlix | Sign Up & Log In</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #e50914;
+            --primary-hover: #ff0f1a;
+            --accent-glow: rgba(229, 9, 20, 0.5);
+            --glass: rgba(0, 0, 0, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-muted: #b3b3b3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 0;
+            /* Add padding for scroll room */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            color: #fff;
+        }
+
+        /* Clean Cinematic Background - Removed distracting image */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at center, #1a1a1a 0%, #000 100%),
+                radial-gradient(circle at top right, rgba(229, 9, 20, 0.08) 0%, transparent 40%);
+            z-index: -1;
+        }
+
+        .auth-container {
+            width: 95%;
+            /* Responsive width */
+            max-width: 450px;
+            padding: 50px 40px;
+            background: rgba(0, 0, 0, 0.85);
+            /* Slightly darker for more professionalism */
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            position: relative;
+            animation: containerEntry 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: auto;
+            /* Center in scrollable area */
+        }
+
+        @keyframes containerEntry {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Close Button */
+        .close-auth {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            text-decoration: none;
+            transition: 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        .close-auth:hover {
+            color: #fff;
+            background: rgba(229, 9, 20, 0.3);
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        /* Logo Branding */
+        .logo-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 25px var(--accent-glow);
+            /* Removed tilt for cleaner professional look */
+        }
+
+        .logo-icon i {
+            color: #fff;
+            font-size: 20px;
+            margin-left: 3px;
+        }
+
+        .logo-text {
+            color: #fff;
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .auth-header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Professionally Styled Inputs */
+        .input-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .input-group i:not(.eye-toggle) {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.1rem;
+            z-index: 10;
+            /* Ensure icons stay above ANY filled content */
+            transition: 0.3s;
+            pointer-events: none;
+            /* Let clicks pass through to input */
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 20px 20px 20px 56px;
+            background: rgba(0, 0, 0, 0.3) !important;
+            /* Darker filled state */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: #fff !important;
+            font-family: inherit;
+            font-size: 1.05rem;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Fix Boring Browser Autofill turning fields white */
+        .input-group input:-webkit-autofill,
+        .input-group input:-webkit-autofill:hover,
+        .input-group input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #141414 inset !important;
+            /* Dark background for autofill */
+            transition: background-color 5000s ease-in-out 0s;
+            border: 1px solid var(--primary);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding-left: 60px;
+        }
+
+        /* Highlighting for the Left Icons */
+        .input-group:focus-within i:not(.eye-toggle) {
+            color: var(--primary);
+            left: 22px;
+        }
+
+        /* Permanent Lock for Eye Toggle (Always on the Right) */
+        .eye-toggle {
+            position: absolute;
+            right: 20px !important;
+            left: auto !important;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 10px;
+            transition: color 0.2s, transform 0.2s;
+            z-index: 15;
+        }
+
+        .eye-toggle:hover {
+            color: #fff;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Highlight eye toggle when field is active or filled */
+        .input-group:focus-within .eye-toggle,
+        .input-group input:not(:placeholder-shown)~.eye-toggle {
+            color: var(--primary);
+        }
+
+        /* Buttons */
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px rgba(229, 9, 20, 0.3);
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            background: var(--primary-hover);
+            box-shadow: 0 15px 35px rgba(229, 9, 20, 0.5);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        .divider span {
+            padding: 0 15px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .social-btn {
+            width: 100%;
+            padding: 16px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .social-btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Official Google Brand Colors for the icon */
+        .google-icon {
+            font-weight: 900;
+            display: inline-block;
+            background: linear-gradient(to right,
+                    #4285F4 0% 25%,
+                    #EA4335 25% 50%,
+                    #FBBC05 50% 75%,
+                    #34A853 75% 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.3rem;
+            filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1));
+        }
+
+        .switch-mode {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .switch-mode span:last-child {
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+            margin-left: 5px;
+            transition: 0.2s;
+        }
+
+        .switch-mode span:last-child:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-overlay"></div>
+
+    <div class="auth-container">
+        <!-- Close Button -->
+        <a href="index.html" class="close-auth" title="Exit">
+            <i class="fa-solid fa-xmark"></i>
+        </a>
+
+        <!-- Logo -->
+        <div class="logo-section">
+            <div class="logo-icon">
+                <i class="fa-solid fa-play"></i>
+            </div>
+            <span class="logo-text">MYFLIX</span>
+        </div>
+
+        <div class="auth-header">
+            <h1 id="auth-title">Welcome Back</h1>
+            <p id="auth-subtitle">Elevate your cinematic journey.</p>
+        </div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" id="email" placeholder="Email Address" required>
+        </div>
+
+        <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="password" placeholder="Password" required>
+            <i class="fa-regular fa-eye eye-toggle" id="togglePassword" onclick="togglePasswordVisibility()"></i>
+        </div>
+
+        <button class="submit-btn" id="submit-btn" onclick="handleAuth()">Sign In</button>
+
+        <div class="divider">
+            <span>Or continue with</span>
+        </div>
+
+        <button class="social-btn" onclick="handleGoogleSignIn()">
+            <i class="fa-brands fa-google google-icon"></i>
+            Sign in with Google
+        </button>
+
+        <div class="switch-mode">
+            <span id="toggle-msg">New to MyFlix?</span>
+            <span id="toggle-btn" onclick="toggleMode()">Sign up now</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRCZ76Axl5mk5ajLvEXIdtbP9VD4Ni0nQ",
+            authDomain: "myflix-a64b4.firebaseapp.com",
+            projectId: "myflix-a64b4",
+            storageBucket: "myflix-a64b4.firebasestorage.app",
+            messagingSenderId: "101704238237",
+            appId: "1:101704238237:web:6666079060abef8fc8c074"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        let isLoginMode = true;
+
+        window.toggleMode = () => {
+            isLoginMode = !isLoginMode;
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+            const submitBtn = document.getElementById('submit-btn');
+            const toggleMsg = document.getElementById('toggle-msg');
+            const toggleBtn = document.getElementById('toggle-btn');
+
+            if (isLoginMode) {
+                title.innerText = "Welcome Back";
+                subtitle.innerText = "Elevate your cinematic journey.";
+                submitBtn.innerText = "Sign In";
+                toggleMsg.innerText = "New to MyFlix?";
+                toggleBtn.innerText = "Sign up now";
+            } else {
+                title.innerText = "Create Account";
+                subtitle.innerText = "Join the ultimate streaming experience.";
+                submitBtn.innerText = "Get Started";
+                toggleMsg.innerText = "Already a member?";
+                toggleBtn.innerText = "Sign in here";
+            }
+        };
+
+        window.togglePasswordVisibility = () => {
+            const pass = document.getElementById('password');
+            const icon = document.getElementById('togglePassword');
+            if (pass.type === 'password') {
+                pass.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                pass.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        };
+
+        window.handleAuth = async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+                window.location.href = "index.html";
+            } catch (error) {
+                alert(error.message);
+            }
+        };
+
+        window.handleGoogleSignIn = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                window.location.href = "index.html";
+            } catch (error) {
+                alert("Could not sign in with Google.");
+            }
+        };
+    </script>
+</body>
+
+</html>
