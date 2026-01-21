@@ -151,31 +151,32 @@
             </div>
 
             <div class="nav-menu">
-                <a href="index.html" class="nav-link">Home</a>
+                <a href="index.html" id="nav-home" class="nav-link">Home</a>
                 <a href="explore.html?type=movie&category=now_playing" id="nav-movies" class="nav-link">Movies</a>
                 <a href="explore.html?type=tv&category=on_the_air" id="nav-tv" class="nav-link">TV Shows</a>
                 <a href="explore.html?type=multi&category=korean" id="nav-korean" class="nav-link">Korean</a>
                 <a href="explore.html?type=multi&category=chinese" id="nav-chinese" class="nav-link">Chinese</a>
             </div>
+        </div>
 
-            <div style="display: flex; align-items: center;">
-                <div class="search-container" style="position: relative;">
-                    <div class="search-box" id="searchBox">
-                        <i class="fa-solid fa-magnifying-glass" onclick="focusSearch()"></i>
-                        <input type="text" id="movie-search" placeholder="Search movies, TV shows..."
-                            oninput="searchMovies()" autocomplete="off">
-                    </div>
-                    <!-- Premium Live Search Dropdown -->
-                    <div id="search-dropdown" class="search-results-dropdown"></div>
+        <div style="display: flex; align-items: center;">
+            <div class="search-container" style="position: relative;">
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass" onclick="focusSearch()"></i>
+                    <input type="text" id="movie-search" placeholder="Search movies, TV shows..."
+                        oninput="searchMovies()" autocomplete="off">
                 </div>
+                <!-- Premium Live Search Dropdown -->
+                <div id="search-dropdown" class="search-results-dropdown"></div>
+            </div>
 
-                <div id="user-profile-btn" class="profile-circle" style="margin-left: 15px;">
-                    <i id="logged-out-icon" class="fa-regular fa-user"></i>
-                    <div id="avatar-container">
-                        <img id="logged-in-avatar" src="" alt="Avatar">
-                    </div>
+            <div id="user-profile-btn" class="profile-circle" style="margin-left: 15px;">
+                <i id="logged-out-icon" class="fa-regular fa-user"></i>
+                <div id="avatar-container">
+                    <img id="logged-in-avatar" src="" alt="Avatar">
                 </div>
             </div>
+        </div>
     </nav>
 
     <main class="explore-container">
@@ -442,7 +443,7 @@
 
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.onclick = () => playMedia(item.id, itemType);
+                card.onclick = () => window.location.href = `details.html?id=${item.id}&type=${itemType}`;
 
                 card.innerHTML = `
                     <div class="card-img-container">
@@ -519,7 +520,7 @@
                 const itemEl = document.createElement('div');
                 itemEl.className = 'search-item';
                 itemEl.onclick = () => {
-                    playMedia(item.id, item.media_type);
+                    window.location.href = `details.html?id=${item.id}&type=${item.media_type}`;
                     dropdown.style.display = 'none';
                 };
                 itemEl.innerHTML = `
@@ -550,6 +551,34 @@
         loadGenres();
         populateYears();
         loadExplorePage(currentPage);
+    </script>
+    <!-- 6. MOBILE BOTTOM NAVIGATION -->
+    <div class="mobile-bottom-nav">
+        <a href="index.html" class="bottom-nav-item">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="explore.html?type=movie&category=now_playing" class="bottom-nav-item" id="bottom-nav-movies">
+            <i class="fa-solid fa-film"></i>
+            <span>Movies</span>
+        </a>
+        <a href="explore.html?type=tv&category=on_the_air" class="bottom-nav-item" id="bottom-nav-tv">
+            <i class="fa-solid fa-tv"></i>
+            <span>TV Shows</span>
+        </a>
+    </div>
+
+    <script>
+        // Set active state for bottom nav on explore page
+        (function () {
+            const navParams = new URLSearchParams(window.location.search);
+            const typeParam = navParams.get('type');
+            if (typeParam === 'movie') {
+                document.getElementById('bottom-nav-movies').classList.add('active');
+            } else if (typeParam === 'tv') {
+                document.getElementById('bottom-nav-tv').classList.add('active');
+            }
+        })();
     </script>
 </body>
 

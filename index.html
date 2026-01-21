@@ -30,11 +30,11 @@
             </div>
 
             <div class="nav-menu">
-                <a href="index.html" class="nav-link active">Home</a>
-                <a href="explore.html?type=movie&category=now_playing" class="nav-link">Movies</a>
-                <a href="explore.html?type=tv&category=on_the_air" class="nav-link">TV Shows</a>
-                <a href="explore.html?type=multi&category=korean" class="nav-link">Korean</a>
-                <a href="explore.html?type=multi&category=chinese" class="nav-link">Chinese</a>
+                <a href="index.html" id="nav-home" class="nav-link active">Home</a>
+                <a href="explore.html?type=movie&category=now_playing" id="nav-movies" class="nav-link">Movies</a>
+                <a href="explore.html?type=tv&category=on_the_air" id="nav-tv" class="nav-link">TV Shows</a>
+                <a href="explore.html?type=multi&category=korean" id="nav-korean" class="nav-link">Korean</a>
+                <a href="explore.html?type=multi&category=chinese" id="nav-chinese" class="nav-link">Chinese</a>
             </div>
         </div>
 
@@ -193,6 +193,21 @@
             }
         });
     </script>
+    <!-- 5. MOBILE BOTTOM NAVIGATION -->
+    <div class="mobile-bottom-nav">
+        <a href="index.html" class="bottom-nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="explore.html?type=movie&category=now_playing" class="bottom-nav-item">
+            <i class="fa-solid fa-film"></i>
+            <span>Movies</span>
+        </a>
+        <a href="explore.html?type=tv&category=on_the_air" class="bottom-nav-item">
+            <i class="fa-solid fa-tv"></i>
+            <span>TV Shows</span>
+        </a>
+    </div>
 </body>
 
 </html>

@@ -343,6 +343,20 @@
             color: var(--primary);
             text-decoration: underline;
         }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 40px 25px;
+            }
+
+            .auth-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .logo-section {
+                margin-bottom: 30px;
+            }
+        }
     </style>
 </head>
 
@@ -480,10 +494,26 @@
 
         window.handleGoogleSignIn = async () => {
             try {
-                await signInWithPopup(auth, provider);
+                // Ensure provider is set
+                const googleProvider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, googleProvider);
+                console.log("User signed in:", result.user);
                 window.location.href = "index.html";
             } catch (error) {
-                alert("Could not sign in with Google.");
+                console.error("Google Sign-In Error:", error);
+
+                // Friendly error message based on code
+                let msg = "Could not sign in with Google.";
+                if (error.code === 'auth/popup-blocked') {
+                    msg = "Login popup was blocked by your browser. Please allow popups for this site.";
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    msg = "Google Sign-In is not enabled in your Firebase Console. Please enable it in the Authentication tab.";
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    msg = "This domain is not authorized for Google Sign-In. Add it in your Firebase Console.";
+                } else {
+                    msg += " Details: " + error.message;
+                }
+                alert(msg);
             }
         };
     </script>

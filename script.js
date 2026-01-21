@@ -22,6 +22,12 @@ let searchTimeout;
 
 // --- MAIN INIT ---
 async function startApp() {
+    // Check if we are on details page
+    if (window.location.pathname.includes('details.html')) {
+        loadDetailsPage();
+        return;
+    }
+
     try {
         await Promise.all([
             loadHero(),
@@ -67,9 +73,43 @@ async function loadHero() {
 
         displayHero(0);
         setupHeroIndicators();
+        setupHeroSwipes(); // Enable mobile swipe gestures
         startHeroTimer();
     } catch (error) {
         console.error("Error loading hero:", error);
+    }
+}
+
+// Enable Swipe for Mobile
+function setupHeroSwipes() {
+    const hero = document.querySelector('.hero-container');
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    hero.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    hero.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const threshold = 50; // Minimum distance for swipe
+        let nextIndex;
+
+        if (touchEndX < touchStartX - threshold) {
+            // Swipe Left -> Next Movie
+            nextIndex = (currentHeroIndex + 1) % heroItems.length;
+            displayHero(nextIndex);
+            resetHeroTimer();
+        } else if (touchEndX > touchStartX + threshold) {
+            // Swipe Right -> Previous Movie
+            nextIndex = (currentHeroIndex - 1 + heroItems.length) % heroItems.length;
+            displayHero(nextIndex);
+            resetHeroTimer();
+        }
     }
 }
 
@@ -80,9 +120,12 @@ function displayHero(index) {
     currentHeroIndex = index;
     featuredMovie = item;
 
-    // 1. Background Image with Premium Fade
+    // 1. Background Image with Premium Fade & Shutter Animation
     const bgContainer = document.getElementById('hero-bg');
     const existingImg = bgContainer.querySelector('img');
+
+    // Trigger shutter effect class for mobile animation
+    bgContainer.classList.add('changing');
 
     const newImg = document.createElement('img');
     newImg.src = CONFIG.IMG_URL + item.backdrop_path;
@@ -95,12 +138,19 @@ function displayHero(index) {
             setTimeout(() => {
                 bgContainer.innerHTML = '';
                 bgContainer.appendChild(newImg);
-                requestAnimationFrame(() => newImg.style.opacity = '1');
-            }, 800);
+                requestAnimationFrame(() => {
+                    newImg.style.opacity = '1';
+                    // Remove changing class after transition completes
+                    setTimeout(() => bgContainer.classList.remove('changing'), 1200);
+                });
+            }, 1000); // Slightly longer wait for old image to exit
         } else {
             bgContainer.innerHTML = '';
             bgContainer.appendChild(newImg);
-            requestAnimationFrame(() => newImg.style.opacity = '1');
+            requestAnimationFrame(() => {
+                newImg.style.opacity = '1';
+                setTimeout(() => bgContainer.classList.remove('changing'), 500);
+            });
         }
     };
 
@@ -176,6 +226,7 @@ function displayHero(index) {
 
     // 4. Buttons
     document.getElementById('hero-play-btn').onclick = () => playMedia(item.id, item.media_type);
+    document.getElementById('hero-info-btn').onclick = () => window.location.href = `details.html?id=${item.id}&type=${item.media_type}`;
 }
 
 function setupHeroIndicators() {
@@ -252,7 +303,7 @@ function fillShelf(items, shelfId, defaultType) {
 
         const card = document.createElement('div');
         card.className = 'card';
-        card.onclick = () => playMedia(item.id, type);
+        card.onclick = () => window.location.href = `details.html?id=${item.id}&type=${type}`;
 
         card.innerHTML = `
             <div class="card-img-container">
@@ -273,13 +324,13 @@ function fillShelf(items, shelfId, defaultType) {
 }
 
 // --- GLOBAL UTILS ---
-window.playMedia = function (id, type) {
+window.playMedia = function (id, type, season = 1, episode = 1) {
     const overlay = document.getElementById('player-overlay');
     const iframe = document.getElementById('video-iframe');
     // Using vidsrc.cc as requested
     iframe.src = type === 'movie' ?
         `https://vidsrc.cc/v2/embed/movie/${id}` :
-        `https://vidsrc.cc/v2/embed/tv/${id}/1/1`;
+        `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
     overlay.style.display = 'block';
 }
 
@@ -335,7 +386,7 @@ function displaySearchDropdown(items) {
         const itemEl = document.createElement('div');
         itemEl.className = 'search-item';
         itemEl.onclick = () => {
-            playMedia(item.id, item.media_type);
+            window.location.href = `details.html?id=${item.id}&type=${item.media_type}`;
             dropdown.style.display = 'none';
         };
 
@@ -407,5 +458,196 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// --- DETAILS PAGE LOGIC ---
+async function loadDetailsPage() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const type = params.get('type') || 'movie';
+
+    if (!id) return;
+
+    try {
+        const res = await fetch(`${CONFIG.BASE_URL}/${type}/${id}?api_key=${CONFIG.API_KEY}&append_to_response=credits,recommendations,similar,external_ids`);
+        const data = await res.json();
+
+        // 1. Hero & Meta
+        document.title = `${data.title || data.name} | MyFlix`;
+        document.getElementById('details-backdrop').innerHTML = `<img src="${CONFIG.IMG_URL + data.backdrop_path}" alt="">`;
+        document.getElementById('details-poster').src = CONFIG.IMG_URL_SMALL + data.poster_path;
+        document.getElementById('details-title').innerText = data.title || data.name;
+        document.getElementById('details-overview').innerText = data.overview;
+
+        // Setup Play Button
+        window.playCurrentMedia = () => window.playMedia(id, type);
+
+        // Meta Tags
+        const year = (data.release_date || data.first_air_date || "N/A").split('-')[0];
+        const rating = data.vote_average ? data.vote_average.toFixed(1) : "N/A";
+        const runtime = type === 'movie' ? `${data.runtime}m` : `${data.number_of_seasons} Seasons`;
+        const status = data.status;
+
+        const metaContainer = document.getElementById('details-meta');
+        metaContainer.innerHTML = `
+            <span class="meta-tag rating-badge"><i class="fa-solid fa-star"></i> ${rating}</span>
+            <span class="meta-tag">${year}</span>
+            <span class="meta-tag">${runtime}</span>
+            <span class="meta-tag">${status}</span>
+        `;
+
+        // 2. Cast
+        const castList = document.getElementById('cast-list');
+        if (data.credits && data.credits.cast) {
+            data.credits.cast.slice(0, 10).forEach(person => {
+                if (!person.profile_path) return;
+                const div = document.createElement('div');
+                div.className = 'cast-item';
+                div.innerHTML = `
+                    <img class="cast-img" src="${CONFIG.IMG_URL_SMALL + person.profile_path}" alt="${person.name}">
+                    <div class="cast-name">${person.name}</div>
+                    <div class="cast-role">${person.character}</div>
+                `;
+                castList.appendChild(div);
+            });
+        }
+
+        // 3. Seasons (TV Only)
+        if (type === 'tv' && data.seasons) {
+            document.getElementById('seasons-section').style.display = 'block';
+            const seasonShelf = document.getElementById('seasons-list');
+            data.seasons.forEach(season => {
+                if (season.season_number === 0) return; // Skip specials usually
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.flex = '0 0 140px';
+                div.onclick = () => loadEpisodes(id, season.season_number, season.name);
+
+                div.innerHTML = `
+                    <div class="card-img-container">
+                        <img src="${season.poster_path ? CONFIG.IMG_URL_SMALL + season.poster_path : 'https://via.placeholder.com/150'}" loading="lazy">
+                    </div>
+                    <div class="card-info">
+                        <h4 class="card-title">${season.name}</h4>
+                        <span style="font-size:11px; color:#aaa;">${season.episode_count} Episodes</span>
+                    </div>
+                `;
+                seasonShelf.appendChild(div);
+            });
+        }
+
+        // 4. Collection (Movies Only)
+        if (type === 'movie' && data.belongs_to_collection) {
+            loadCollection(data.belongs_to_collection.id);
+        }
+
+        // 5. Recommendations / Related (Strict Genre Matching)
+        let relatedResults = data.recommendations.results.length > 0 ? data.recommendations.results : data.similar.results;
+
+        // Filter by matching at least one genre if genres are available
+        if (data.genres && data.genres.length > 0) {
+            const currentGenreIds = data.genres.map(g => g.id);
+            relatedResults = relatedResults.filter(item =>
+                item.genre_ids && item.genre_ids.some(id => currentGenreIds.includes(id))
+            );
+        }
+
+        // If filter removed too many, fallback to original list (top 15)
+        if (relatedResults.length < 3) {
+            relatedResults = data.recommendations.results.length > 0 ? data.recommendations.results : data.similar.results;
+        }
+
+        fillShelf(relatedResults, 'related-list', type);
+
+    } catch (error) {
+        console.error("Error loading details:", error);
+    }
+}
+
+async function loadCollection(collectionId) {
+    try {
+        const res = await fetch(`${CONFIG.BASE_URL}/collection/${collectionId}?api_key=${CONFIG.API_KEY}`);
+        const data = await res.json();
+
+        // Sort by release date
+        const parts = data.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+
+        if (parts.length > 0) {
+            document.getElementById('collection-section').style.display = 'block';
+            document.querySelector('#collection-section .section-title').innerText = data.name; // "Star Wars Collection"
+            fillShelf(parts, 'collection-list', 'movie');
+        }
+    } catch (e) {
+        console.error("Collection error:", e);
+    }
+}
+
 // Start
 startApp();
+
+async function loadEpisodes(seriesId, seasonNum, seasonName) {
+    try {
+        const res = await fetch(`${CONFIG.BASE_URL}/tv/${seriesId}/season/${seasonNum}?api_key=${CONFIG.API_KEY}`);
+        const data = await res.json();
+
+        if (data.episodes && data.episodes.length > 0) {
+            const episodesSection = document.getElementById('episodes-section');
+            const episodesList = document.getElementById('episodes-list');
+            const episodesTitle = document.getElementById('episodes-title');
+
+            episodesSection.style.display = 'block';
+            episodesTitle.innerText = `${seasonName || 'Season ' + seasonNum} - Episodes`;
+            episodesList.innerHTML = ''; // Clear previous
+
+            data.episodes.forEach(ep => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                // Cinematic Wide Card
+                card.style.flex = '0 0 260px';
+                card.onclick = () => window.playMedia(seriesId, 'tv', seasonNum, ep.episode_number);
+
+                const imgContent = ep.still_path ?
+                    `<img src="${CONFIG.IMG_URL_SMALL + ep.still_path}" loading="lazy" style="height:100%; width: 100%; object-fit: cover; opacity: 0.9; transition: opacity 0.3s;">` :
+                    `<div style="height: 100%; width: 100%; background: linear-gradient(135deg, #1f1f1f 0%, #121212 100%); display: flex; align-items: center; justify-content: center; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                        <i class="fa-solid fa-clapperboard" style="margin-right: 5px;"></i> No Preview
+                     </div>`;
+
+                const runtimeBadge = ep.runtime ?
+                    `<span style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; backdrop-filter: blur(4px);">${ep.runtime}m</span>`
+                    : '';
+
+                // Add Hover Play Icon Overlay
+                const playOverlay = `<div class="play-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;">
+                    <i class="fa-solid fa-circle-play" style="font-size: 36px; color: white; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));"></i>
+                </div>`;
+
+                card.innerHTML = `
+                    <div class="card-img-container" style="height: 146px; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                        ${imgContent}
+                        ${playOverlay}
+                        ${runtimeBadge}
+                    </div>
+                    
+                    <div class="card-info" style="padding: 12px 2px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                                <span style="font-size: 11px; color: #46d369; font-weight: 700; text-transform: uppercase;">S${seasonNum} E${ep.episode_number}</span>
+                                <span style="font-size: 10px; color: #eee; font-weight: 600; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px;">${ep.air_date || 'TBA'}</span>
+                            </div>
+                            <span style="font-size: 14px; font-weight: 600; color: #fff; line-height: 1.3;">${ep.name}</span>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        .card:hover .card-img-container img { opacity: 1; transform: scale(1.05); transition: transform 0.4s ease; }
+                        .card:hover .play-overlay { opacity: 1; }
+                    </style>
+                `;
+                episodesList.appendChild(card);
+            });
+
+            // smooth scroll to episodes
+            episodesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    } catch (error) {
+        console.error("Error loading episodes:", error);
+    }
+}
