@@ -24,14 +24,15 @@
         .meta-tag {
             background: rgba(255, 255, 255, 0.1);
             color: #ddd;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
         }
 
         .btn-primary {
             background: #fff;
             color: #000;
         }
-
-        /* Details Page Specific Styles */
         .details-hero {
             position: relative;
             width: 100%;
@@ -108,12 +109,6 @@
             margin-bottom: 20px;
         }
 
-        .meta-tag {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
 
         .details-actions {
             display: flex;
@@ -214,6 +209,7 @@
                 <a href="explore.html?type=tv&category=on_the_air" class="nav-link">TV Shows</a>
                 <a href="explore.html?type=multi&category=korean" class="nav-link">Korean</a>
                 <a href="explore.html?type=multi&category=chinese" class="nav-link">Chinese</a>
+                <a href="watchlist.html" class="nav-link">Watchlist</a>
             </div>
         </div>
 
@@ -247,7 +243,7 @@
                     <!-- Meta info injected here -->
                 </div>
                 <p id="details-overview"
-                    style="opacity: 0.8; line-height: 1.6; max-width: 600px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
+                    style="opacity: 0.8; line-height: 1.6; max-width: 600px; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
                 </p>
                 <div class="details-actions">
                     <button id="play-btn" class="btn btn-primary" onclick="playCurrentMedia()">

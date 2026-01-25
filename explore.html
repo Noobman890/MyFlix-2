@@ -141,7 +141,7 @@
 <body>
 
     <!-- 1. NAVIGATION -->
-    <nav class="top-nav scrolled">
+    <nav class="top-nav" id="navbar">
         <div style="display: flex; align-items: center;">
             <div class="logo-container" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
@@ -156,6 +156,7 @@
                 <a href="explore.html?type=tv&category=on_the_air" id="nav-tv" class="nav-link">TV Shows</a>
                 <a href="explore.html?type=multi&category=korean" id="nav-korean" class="nav-link">Korean</a>
                 <a href="explore.html?type=multi&category=chinese" id="nav-chinese" class="nav-link">Chinese</a>
+                <a href="watchlist.html" id="nav-watchlist" class="nav-link">Watchlist</a>
             </div>
         </div>
 
@@ -552,6 +553,17 @@
         populateYears();
         loadExplorePage(currentPage);
     </script>
+    <script>
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
     <!-- 6. MOBILE BOTTOM NAVIGATION -->
     <div class="mobile-bottom-nav">
         <a href="index.html" class="bottom-nav-item">
@@ -565,6 +577,10 @@
         <a href="explore.html?type=tv&category=on_the_air" class="bottom-nav-item" id="bottom-nav-tv">
             <i class="fa-solid fa-tv"></i>
             <span>TV Shows</span>
+        </a>
+        <a href="watchlist.html" class="bottom-nav-item" id="bottom-nav-watchlist">
+            <i class="fa-solid fa-bookmark"></i>
+            <span>Watchlist</span>
         </a>
     </div>
 

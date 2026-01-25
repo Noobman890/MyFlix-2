@@ -20,11 +20,275 @@ const auth = getAuth(app);
 let featuredMovie = null;
 let searchTimeout;
 
+// --- WATCHLIST FUNCTIONALITY ---
+// Initialize watchlist from localStorage
+function initWatchlist() {
+    if (!localStorage.getItem('watchlist')) {
+        localStorage.setItem('watchlist', JSON.stringify([]));
+    }
+}
+
+// Get current watchlist
+function getWatchlist() {
+    return JSON.parse(localStorage.getItem('watchlist') || '[]');
+}
+
+// Save watchlist to localStorage
+function saveWatchlist(watchlist) {
+    localStorage.setItem('watchlist', JSON.stringify(watchlist));
+}
+
+// Check if item is in watchlist
+function isInWatchlist(itemId, itemType) {
+    const watchlist = getWatchlist();
+    return watchlist.some(item => item.id === itemId && item.type === itemType);
+}
+
+// Add item to watchlist
+function addToWatchlist(item) {
+    const watchlist = getWatchlist();
+    if (!isInWatchlist(item.id, item.type)) {
+        watchlist.push(item);
+        saveWatchlist(watchlist);
+        return true;
+    }
+    return false;
+}
+
+// Remove item from watchlist
+function removeFromWatchlist(itemId, itemType) {
+    let watchlist = getWatchlist();
+    const initialLength = watchlist.length;
+    watchlist = watchlist.filter(item => !(item.id === itemId && item.type === itemType));
+    saveWatchlist(watchlist);
+    return watchlist.length !== initialLength;
+}
+
+// Toggle watchlist status
+function toggleWatchlist(item) {
+    if (isInWatchlist(item.id, item.type)) {
+        removeFromWatchlist(item.id, item.type);
+        return { success: true, action: 'removed' };
+    } else {
+        addToWatchlist(item);
+        return { success: true, action: 'added' };
+    }
+}
+
+// Load watchlist page
+async function loadWatchlistPage() {
+    const watchlist = getWatchlist();
+    const watchlistGrid = document.getElementById('explore-grid'); // Changed to standard grid ID
+    const watchlistEmpty = document.getElementById('watchlist-empty');
+    const watchlistFilterBar = document.getElementById('watchlist-filter-bar');
+
+    if (watchlist.length === 0) {
+        if (watchlistGrid) watchlistGrid.innerHTML = '';
+        if (watchlistEmpty) watchlistEmpty.style.display = 'block';
+        if (watchlistFilterBar) watchlistFilterBar.style.display = 'none';
+        return;
+    } else {
+        if (watchlistGrid) watchlistGrid.style.display = 'grid';
+        if (watchlistEmpty) watchlistEmpty.style.display = 'none';
+        if (watchlistFilterBar) watchlistFilterBar.style.display = 'flex';
+        watchlistGrid.innerHTML = '';
+    }
+
+    // Fetch details for each watchlist item
+    for (const item of watchlist) {
+        try {
+            const res = await fetch(`${CONFIG.BASE_URL}/${item.type}/${item.id}?api_key=${CONFIG.API_KEY}`);
+            const data = await res.json();
+
+            const card = document.createElement('div');
+            card.className = 'card'; // Standard card class
+
+            const year = (data.release_date || data.first_air_date || "N/A").split('-')[0];
+            const rating = data.vote_average ? data.vote_average.toFixed(1) : "N/A";
+            const lang = (data.original_language || "en").toUpperCase();
+
+            card.innerHTML = `
+                <div class="card-img-container">
+                    <img src="${CONFIG.IMG_URL_SMALL + data.poster_path}" alt="${data.title || data.name}" loading="lazy">
+                    <button class="watchlist-remove-btn" onclick="removeWatchlistItem(${item.id}, '${item.type}', event)" title="Remove from Watchlist">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-info">
+                    <h4 class="card-title">${data.title || data.name}</h4>
+                    <div class="card-meta">
+                        <span class="rating-badge">${rating}</span>
+                        <span class="card-year">${year}</span>
+                        <span class="lang-badge-small">${lang}</span>
+                        <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">${item.type.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler to navigate to details page
+            card.onclick = (e) => {
+                if (!e.target.closest('.watchlist-remove-btn')) {
+                    window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+                }
+            };
+
+            watchlistGrid.appendChild(card);
+        } catch (error) {
+            console.error(`Error loading watchlist item ${item.id}:`, error);
+        }
+    }
+}
+
+// Remove watchlist item from UI
+window.removeWatchlistItem = function (itemId, itemType, event) {
+    event.stopPropagation();
+    removeFromWatchlist(itemId, itemType);
+    loadWatchlistPage(); // Refresh the watchlist
+};
+
+// Filter watchlist
+window.filterWatchlist = function () {
+    const typeFilter = document.getElementById('watchlist-type-filter').value;
+    const sortFilter = document.getElementById('watchlist-sort-filter').value;
+    const watchlist = getWatchlist();
+    const watchlistGrid = document.getElementById('explore-grid');
+
+    // Filter by type
+    let filteredItems = watchlist;
+    if (typeFilter !== 'all') {
+        filteredItems = watchlist.filter(item => item.type === typeFilter);
+    }
+
+    // Sort items
+    switch (sortFilter) {
+        case 'added':
+            // Keep original order (recently added)
+            break;
+        case 'popularity':
+            filteredItems.sort((a, b) => b.popularity - a.popularity);
+            break;
+        case 'rating':
+            filteredItems.sort((a, b) => b.vote_average - a.vote_average);
+            break;
+        case 'title':
+            filteredItems.sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
+            break;
+    }
+
+    // Display filtered items
+    displayFilteredWatchlist(filteredItems);
+};
+
+async function displayFilteredWatchlist(items) {
+    const watchlistGrid = document.getElementById('explore-grid'); // Use standard grid
+    watchlistGrid.innerHTML = '';
+
+    for (const item of items) {
+        try {
+            const res = await fetch(`${CONFIG.BASE_URL}/${item.type}/${item.id}?api_key=${CONFIG.API_KEY}`);
+            const data = await res.json();
+
+            const card = document.createElement('div');
+            card.className = 'card'; // Standard card class
+
+            const year = (data.release_date || data.first_air_date || "N/A").split('-')[0];
+            const rating = data.vote_average ? data.vote_average.toFixed(1) : "N/A";
+            const lang = (data.original_language || "en").toUpperCase();
+
+            card.innerHTML = `
+                <div class="card-img-container">
+                    <img src="${CONFIG.IMG_URL_SMALL + data.poster_path}" alt="${data.title || data.name}" loading="lazy">
+                    <button class="watchlist-remove-btn" onclick="removeWatchlistItem(${item.id}, '${item.type}', event)" title="Remove from Watchlist">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-info">
+                    <h4 class="card-title">${data.title || data.name}</h4>
+                    <div class="card-meta">
+                        <span class="rating-badge">${rating}</span>
+                        <span class="card-year">${year}</span>
+                        <span class="lang-badge-small">${lang}</span>
+                        <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">${item.type.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler to navigate to details page
+            card.onclick = (e) => {
+                if (!e.target.closest('.watchlist-remove-btn')) {
+                    window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+                }
+            };
+
+            watchlistGrid.appendChild(card);
+        } catch (error) {
+            console.error(`Error loading watchlist item ${item.id}:`, error);
+        }
+    }
+}
+
+// Add to watchlist from details page
+window.addToWatchlistFromDetails = function () {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const type = params.get('type') || 'movie';
+
+    if (!id) return;
+
+    const item = { id, type };
+    const result = toggleWatchlist(item);
+
+    const watchlistBtn = document.getElementById('watchlist-btn');
+    if (watchlistBtn) {
+        if (result.action === 'added') {
+            watchlistBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added to Watchlist';
+            watchlistBtn.classList.add('added');
+        } else {
+            watchlistBtn.innerHTML = '<i class="fa-solid fa-bookmark"></i> Add to Watchlist';
+            watchlistBtn.classList.remove('added');
+        }
+    }
+};
+
+// Check watchlist status on details page load
+async function checkWatchlistStatus() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const type = params.get('type') || 'movie';
+
+    if (!id) return;
+
+    const watchlistBtn = document.getElementById('watchlist-btn');
+    if (watchlistBtn) {
+        if (isInWatchlist(id, type)) {
+            watchlistBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added to Watchlist';
+            watchlistBtn.classList.add('added');
+        } else {
+            watchlistBtn.innerHTML = '<i class="fa-solid fa-bookmark"></i> Add to Watchlist';
+            watchlistBtn.classList.remove('added');
+        }
+    }
+}
+
 // --- MAIN INIT ---
 async function startApp() {
+    // Initialize watchlist
+    initWatchlist();
+
+    // Check if we are on watchlist page
+    if (window.location.pathname.includes('watchlist.html')) {
+        loadWatchlistPage();
+        return;
+    }
+
     // Check if we are on details page
     if (window.location.pathname.includes('details.html')) {
         loadDetailsPage();
+        // Add watchlist button to details page
+        setTimeout(() => {
+            addWatchlistButtonToDetails();
+            checkWatchlistStatus();
+        }, 1000);
         return;
     }
 
@@ -42,6 +306,37 @@ async function startApp() {
     } catch (error) {
         console.error("Error starting app:", error);
     }
+}
+
+// Add watchlist button to details page
+function addWatchlistButtonToDetails() {
+    const detailsActions = document.querySelector('.details-actions');
+    if (!detailsActions) return;
+
+    const watchlistBtn = document.createElement('button');
+    watchlistBtn.id = 'watchlist-btn';
+    watchlistBtn.className = 'btn btn-secondary';
+    watchlistBtn.onclick = addToWatchlistFromDetails;
+
+    // Initial state
+    watchlistBtn.innerHTML = '<i class="fa-solid fa-bookmark"></i> Add to Watchlist';
+
+    detailsActions.appendChild(watchlistBtn);
+
+    // Add some styling for the added state
+    const style = document.createElement('style');
+    style.textContent = `
+        #watchlist-btn.added {
+            background: #46d369 !important;
+            color: black !important;
+            border: 1px solid rgba(70, 211, 105, 0.3) !important;
+        }
+        #watchlist-btn.added:hover {
+            background: #3bb35a !important;
+            transform: translateY(-5px);
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // --- HERO SECTION (Dynamic Slider) ---
