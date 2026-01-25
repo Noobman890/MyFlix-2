@@ -2,6 +2,7 @@
 import CONFIG from './config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- FIREBASE SETUP ---
 const firebaseConfig = {
@@ -15,62 +16,99 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 // --- APP STATE ---
 let featuredMovie = null;
 let searchTimeout;
 
 // --- WATCHLIST FUNCTIONALITY ---
-// Initialize watchlist from localStorage
+let currentUser = null;
+let userWatchlist = []; // Global source of truth for UI
+
+// Initialize watchlist (from local storage initially)
 function initWatchlist() {
-    if (!localStorage.getItem('watchlist')) {
+    const local = localStorage.getItem('watchlist');
+    if (local) {
+        userWatchlist = JSON.parse(local);
+    } else {
+        userWatchlist = [];
         localStorage.setItem('watchlist', JSON.stringify([]));
     }
 }
 
-// Get current watchlist
+// Get current watchlist (Synchronous for UI speed)
 function getWatchlist() {
-    return JSON.parse(localStorage.getItem('watchlist') || '[]');
-}
-
-// Save watchlist to localStorage
-function saveWatchlist(watchlist) {
-    localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    return userWatchlist;
 }
 
 // Check if item is in watchlist
 function isInWatchlist(itemId, itemType) {
-    const watchlist = getWatchlist();
-    return watchlist.some(item => item.id === itemId && item.type === itemType);
+    return userWatchlist.some(item => item.id == itemId && item.type === itemType);
 }
 
 // Add item to watchlist
-function addToWatchlist(item) {
-    const watchlist = getWatchlist();
-    if (!isInWatchlist(item.id, item.type)) {
-        watchlist.push(item);
-        saveWatchlist(watchlist);
-        return true;
+async function addToWatchlist(item) {
+    // 1. Optimistic Update (UI first)
+    if (isInWatchlist(item.id, item.type)) return false;
+
+    userWatchlist.push(item);
+
+    // 2. Persist
+    if (currentUser) {
+        // Logged In: Save to Firestore
+        try {
+            const userRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userRef, {
+                watchlist: arrayUnion(item)
+            });
+        } catch (e) {
+            console.error("Error adding to Firestore, trying setDoc...", e);
+            // If doc doesn't exist, create it
+            const userRef = doc(db, "users", currentUser.uid);
+            await setDoc(userRef, { watchlist: userWatchlist }, { merge: true });
+        }
+    } else {
+        // Guest: Save to LocalStorage
+        localStorage.setItem('watchlist', JSON.stringify(userWatchlist));
     }
-    return false;
+    return true;
 }
 
 // Remove item from watchlist
-function removeFromWatchlist(itemId, itemType) {
-    let watchlist = getWatchlist();
-    const initialLength = watchlist.length;
-    watchlist = watchlist.filter(item => !(item.id === itemId && item.type === itemType));
-    saveWatchlist(watchlist);
-    return watchlist.length !== initialLength;
+async function removeFromWatchlist(itemId, itemType) {
+    const initialLength = userWatchlist.length;
+    const itemToRemove = userWatchlist.find(item => item.id == itemId && item.type === itemType);
+
+    if (!itemToRemove) return false;
+
+    // 1. Optimistic Update
+    userWatchlist = userWatchlist.filter(item => !(item.id == itemId && item.type === itemType));
+
+    // 2. Persist
+    if (currentUser) {
+        try {
+            const userRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userRef, {
+                watchlist: arrayRemove(itemToRemove)
+            });
+        } catch (e) {
+            console.error("Error removing from Firestore:", e);
+        }
+    } else {
+        localStorage.setItem('watchlist', JSON.stringify(userWatchlist));
+    }
+
+    return true;
 }
 
 // Toggle watchlist status
-function toggleWatchlist(item) {
+async function toggleWatchlist(item) {
     if (isInWatchlist(item.id, item.type)) {
-        removeFromWatchlist(item.id, item.type);
+        await removeFromWatchlist(item.id, item.type);
         return { success: true, action: 'removed' };
     } else {
-        addToWatchlist(item);
+        await addToWatchlist(item);
         return { success: true, action: 'added' };
     }
 }
@@ -228,7 +266,8 @@ async function displayFilteredWatchlist(items) {
 }
 
 // Add to watchlist from details page
-window.addToWatchlistFromDetails = function () {
+// Add to watchlist from details page
+window.addToWatchlistFromDetails = async function () {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const type = params.get('type') || 'movie';
@@ -236,7 +275,7 @@ window.addToWatchlistFromDetails = function () {
     if (!id) return;
 
     const item = { id, type };
-    const result = toggleWatchlist(item);
+    const result = await toggleWatchlist(item);
 
     const watchlistBtn = document.getElementById('watchlist-btn');
     if (watchlistBtn) {
@@ -720,36 +759,92 @@ window.focusSearch = function () {
 }
 
 // --- AUTH UI UPDATES ---
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     const profileBtn = document.getElementById('user-profile-btn');
     const loginIcon = document.getElementById('logged-out-icon');
     const avatarContainer = document.getElementById('avatar-container');
     const avatarImg = document.getElementById('logged-in-avatar');
 
+    currentUser = user; // Update global user
+
     if (user) {
-        // Logged In: Show Avatar
+        // Logged In
         loginIcon.style.display = "none";
         avatarContainer.style.display = "block";
         profileBtn.classList.add('logged-in');
 
-        // Use user's photo or a unique procedurally generated avatar based on UID
-        // DiceBear 'avataaars' style creates high-quality professional unique avatars
+        // Avatar
         const uniqueAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
         avatarImg.src = user.photoURL || uniqueAvatar;
+
+        // --- SYNC WATCHLIST ---
+        try {
+            const userRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(userRef);
+
+            if (docSnap.exists()) {
+                // Merge cloud data with any local (guest) data
+                const cloudWatchlist = docSnap.data().watchlist || [];
+
+                // Identify items currently in local that aren't in cloud (newly added while guest)
+                // Note: userWatchlist currently holds local storage data from initWatchlist()
+                const localOnly = userWatchlist.filter(localItem =>
+                    !cloudWatchlist.some(cloudItem => cloudItem.id == localItem.id && cloudItem.type === localItem.type)
+                );
+
+                if (localOnly.length > 0) {
+                    console.log("Merging local items to cloud...", localOnly);
+                    // Add local items to cloud
+                    await updateDoc(userRef, {
+                        watchlist: arrayUnion(...localOnly)
+                    });
+                    // Final list is cloud + local
+                    userWatchlist = [...cloudWatchlist, ...localOnly];
+                } else {
+                    userWatchlist = cloudWatchlist;
+                }
+            } else {
+                // First time user? Create doc with current local items
+                await setDoc(userRef, { watchlist: userWatchlist });
+            }
+
+            // Refresh UI if on watchlist page
+            if (window.location.pathname.includes('watchlist.html')) {
+                loadWatchlistPage();
+            }
+            // Check button status if on details page
+            if (window.location.pathname.includes('details.html')) {
+                checkWatchlistStatus();
+            }
+
+        } catch (err) {
+            console.error("Error syncing watchlist:", err);
+        }
 
         profileBtn.onclick = () => {
             if (confirm(`Logout from ${user.email}?`)) {
                 signOut(auth).then(() => {
+                    // Clear local state on logout or keep? 
+                    // Usually safer to clear sensitive data, but for watchlist maybe keep or clear.
+                    // Let's clear to avoid confusion.
+                    userWatchlist = [];
+                    localStorage.removeItem('watchlist'); // Optional: Clear guest data
                     window.location.reload();
                 });
             }
         };
     } else {
-        // Logged Out: Show Guest Icon
+        // Logged Out
         loginIcon.style.display = "block";
         avatarContainer.style.display = "none";
         profileBtn.classList.remove('logged-in');
         profileBtn.onclick = () => window.location.href = 'auth.html';
+
+        // Re-init local storage for guest
+        initWatchlist();
+        if (window.location.pathname.includes('watchlist.html')) {
+            loadWatchlistPage();
+        }
     }
 });
 

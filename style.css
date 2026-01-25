@@ -1250,7 +1250,7 @@ input {
     }
 
     /* Explore Grid */
-    .explore-grid {
+    #explore-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 15px !important;
         padding: 15px !important;
