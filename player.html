@@ -104,18 +104,57 @@
             /* Hidden as per request */
         }
 
-        /* Mobile Adjustments */
+        <style>
+        /* ... existing desktop styles ... */
+
+        /* Mobile Immersive Mode */
         @media (max-width: 768px) {
 
-            .video-wrapper,
-            .content-wrapper {
-                max-width: 100%;
-                border-radius: 0;
-                margin-top: 0;
+            /* Hide standard nav */
+            .player-nav {
+                display: none !important;
             }
 
-            .content-wrapper {
-                padding: 10px 4%;
+            /* Full Screen Video Container */
+            .video-wrapper {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+                z-index: 2000;
+                background: #000;
+                display: flex;
+                align-items: center;
+                /* Vertical Center */
+                justify-content: center;
+            }
+
+            .video-container {
+                width: 100%;
+                /* Maintain aspect ratio */
+            }
+
+            /* Floating Back Button for Mobile */
+            .mobile-back-btn {
+                display: flex !important;
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                z-index: 2001;
+                background: rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: #fff;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                cursor: pointer;
             }
         }
     </style>
@@ -131,6 +170,11 @@
     </nav>
 
     <div class="video-wrapper">
+        <!-- Floating Back Button (Mobile Only) -->
+        <div class="mobile-back-btn" onclick="history.back()" style="display: none;">
+            <i class="fa-solid fa-arrow-left"></i>
+        </div>
+
         <div class="video-container">
             <!-- Sandbox: Exclude allow-popups to block ads if possible -->
             <iframe id="video-player" src=""

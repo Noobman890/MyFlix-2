@@ -874,7 +874,7 @@ onAuthStateChanged(auth, async (user) => {
 async function loadContinueWatching(uid) {
     if (!uid) return;
 
-    console.log("[DEBUG] Loading Continue Watching for:", uid);
+    // console.log("[DEBUG] Loading Continue Watching for:", uid);
 
     try {
         const userRef = doc(db, "users", uid);
@@ -882,39 +882,88 @@ async function loadContinueWatching(uid) {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            console.log("[DEBUG] User Data:", data);
 
-            if (data.continueWatching) {
+            if (data.continueWatching && data.continueWatching.length > 0) {
                 const history = data.continueWatching;
-                console.log("[DEBUG] History found, length:", history.length);
 
-                if (history.length > 0) {
-                    // Show Container
-                    const container = document.getElementById('continue-watching-container');
-                    const separator = document.getElementById('continue-watching-separator');
+                // Show Container
+                const container = document.getElementById('continue-watching-container');
+                const separator = document.getElementById('continue-watching-separator');
 
-                    if (container) {
-                        container.style.display = 'block';
-                        console.log("[DEBUG] Container set to block");
-                    } else {
-                        console.error("[DEBUG] Container element NOT found");
-                    }
+                if (container) container.style.display = 'block';
+                if (separator) separator.style.display = 'block';
 
-                    if (separator) separator.style.display = 'block';
+                // Render Manually to add Delete Button
+                const shelf = document.getElementById('continue-watching-row');
+                shelf.innerHTML = ''; // Clear existing
 
-                    // Render
-                    fillShelf(history, 'continue-watching-row', 'movie');
-                } else {
-                    console.log("[DEBUG] History is empty");
-                }
+                history.forEach(item => {
+                    const type = item.media_type || 'movie';
+                    const title = item.title || item.name;
+                    const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
+                    const lang = (item.original_language || "en").toUpperCase();
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.onclick = () => window.location.href = `details.html?id=${item.id}&type=${type}`;
+
+                    card.innerHTML = `
+                        <div class="card-img-container">
+                            <img src="${CONFIG.IMG_URL_SMALL + item.poster_path}" alt="${title}" loading="lazy">
+                        </div>
+                        <button class="watchlist-remove-btn" onclick="removeFromHistory(event, ${item.id}, '${type}')" title="Remove">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <div class="card-info">
+                            <h4 class="card-title">${title}</h4>
+                            <div class="card-meta">
+                                <span class="rating-badge">${rating}</span>
+                                <span class="card-year">${year}</span>
+                                <span class="lang-badge-small">${lang}</span>
+                                <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">HD</span>
+                            </div>
+                        </div>
+                    `;
+                    shelf.appendChild(card);
+                });
+
             } else {
-                console.log("[DEBUG] No continueWatching field");
+                // Hide if empty
+                const container = document.getElementById('continue-watching-container');
+                const separator = document.getElementById('continue-watching-separator');
+                if (container) container.style.display = 'none';
+                if (separator) separator.style.display = 'none';
             }
-        } else {
-            console.log("[DEBUG] User doc does not exist");
         }
     } catch (e) {
         console.error("[DEBUG] Error loading history:", e);
+    }
+}
+
+window.removeFromHistory = async function (event, id, type) {
+    event.stopPropagation(); // Prevent card click
+    if (!currentUser) return;
+
+    if (!confirm("Remove from continue watching?")) return;
+
+    try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            const currentHistory = docSnap.data().continueWatching || [];
+            const newHistory = currentHistory.filter(h => !(h.id == id && h.type === type));
+
+            await updateDoc(userRef, {
+                continueWatching: newHistory
+            });
+
+            // Reload to reflect changes
+            loadContinueWatching(currentUser.uid);
+        }
+    } catch (e) {
+        console.error("Error removing from history:", e);
     }
 }
 
