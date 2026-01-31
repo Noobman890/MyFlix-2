@@ -658,22 +658,34 @@ function fillShelf(items, shelfId, defaultType) {
 }
 
 // --- GLOBAL UTILS ---
-window.playMedia = function (id, type, season = 1, episode = 1) {
-    const overlay = document.getElementById('player-overlay');
-    const iframe = document.getElementById('video-iframe');
-    // Using vidsrc.cc as requested
-    iframe.src = type === 'movie' ?
-        `https://vidsrc.cc/v2/embed/movie/${id}` :
-        `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
-    overlay.style.display = 'block';
+window.playMedia = async function (id, type, season = 1, episode = 1) {
+    // Add to history first (if possible)
+    try {
+        // Fetch basic details to store in history object
+        // Note: For speed we might want to store more data initially, but fetching here ensures we have the title/poster
+        const res = await fetch(`${CONFIG.BASE_URL}/${type}/${id}?api_key=${CONFIG.API_KEY}`);
+        const data = await res.json();
+
+        const item = {
+            id: data.id,
+            title: data.title || data.name,
+            poster_path: data.poster_path, // Could be null
+            vote_average: data.vote_average,
+            release_date: data.release_date || data.first_air_date,
+            media_type: type
+        };
+
+        await addToHistory(item);
+
+    } catch (e) {
+        console.error("Error adding to history:", e);
+    }
+
+    // Redirect to dedicated player page
+    window.location.href = `player.html?id=${id}&type=${type}&season=${season}&episode=${episode}`;
 }
 
-window.closePlayer = function () {
-    const overlay = document.getElementById('player-overlay');
-    const iframe = document.getElementById('video-iframe');
-    overlay.style.display = 'none';
-    iframe.src = ""; // Stop audio
-}
+
 
 window.searchMovies = async function () {
     const term = document.getElementById('movie-search').value.trim();
@@ -799,54 +811,130 @@ onAuthStateChanged(auth, async (user) => {
                         watchlist: arrayUnion(...localOnly)
                     });
                     // Final list is cloud + local
+                    // Final list is cloud + local
                     userWatchlist = [...cloudWatchlist, ...localOnly];
                 } else {
                     userWatchlist = cloudWatchlist;
                 }
             } else {
-                // First time user? Create doc with current local items
-                await setDoc(userRef, { watchlist: userWatchlist });
+                // First login, create user doc with local data if any
+                await setDoc(userRef, {
+                    watchlist: userWatchlist,
+                    continueWatching: []
+                }, { merge: true });
             }
 
-            // Refresh UI if on watchlist page
-            if (window.location.pathname.includes('watchlist.html')) {
-                loadWatchlistPage();
-            }
-            // Check button status if on details page
-            if (window.location.pathname.includes('details.html')) {
-                checkWatchlistStatus();
-            }
+            // Sync Continue Watching
+            loadContinueWatching(user.uid);
 
-        } catch (err) {
-            console.error("Error syncing watchlist:", err);
+        } catch (error) {
+            console.error("Error syncing data:", error);
         }
 
+        // Logout Handler
         profileBtn.onclick = () => {
             if (confirm(`Logout from ${user.email}?`)) {
                 signOut(auth).then(() => {
-                    // Clear local state on logout or keep? 
-                    // Usually safer to clear sensitive data, but for watchlist maybe keep or clear.
-                    // Let's clear to avoid confusion.
-                    userWatchlist = [];
-                    localStorage.removeItem('watchlist'); // Optional: Clear guest data
+                    userWatchlist = []; // Clear sensitive data
+                    localStorage.removeItem('watchlist'); // Optional clean
                     window.location.reload();
                 });
             }
         };
+
     } else {
         // Logged Out
         loginIcon.style.display = "block";
         avatarContainer.style.display = "none";
         profileBtn.classList.remove('logged-in');
+
+        // Login Handler
         profileBtn.onclick = () => window.location.href = 'auth.html';
 
-        // Re-init local storage for guest
+
+        // Hide Continue Watching
+        const cwContainer = document.getElementById('continue-watching-container');
+        const cwSeparator = document.getElementById('continue-watching-separator');
+        if (cwContainer) cwContainer.style.display = 'none';
+        if (cwSeparator) cwSeparator.style.display = 'none';
+
+        // Revert to local storage watchlist
         initWatchlist();
-        if (window.location.pathname.includes('watchlist.html')) {
-            loadWatchlistPage();
-        }
+    }
+
+    // Update UI
+    if (window.location.pathname.includes('watchlist.html')) {
+        loadWatchlistPage();
+    } else {
+        checkWatchlistStatus(); // Update buttons if on details page
     }
 });
+
+// --- CONTINUE WATCHING LOGIC ---
+async function loadContinueWatching(uid) {
+    if (!uid) return;
+
+    try {
+        const userRef = doc(db, "users", uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists() && docSnap.data().continueWatching) {
+            const history = docSnap.data().continueWatching;
+
+            if (history.length > 0) {
+                // Show Container
+                const container = document.getElementById('continue-watching-container');
+                const separator = document.getElementById('continue-watching-separator');
+                if (container) container.style.display = 'block';
+                if (separator) separator.style.display = 'block';
+
+                // Render
+                fillShelf(history, 'continue-watching-row', 'movie');
+            }
+        }
+    } catch (e) {
+        console.error("Error loading history:", e);
+    }
+}
+
+async function addToHistory(item) {
+    if (!currentUser) return; // Only track for logged in users
+
+    try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userRef);
+
+        let currentHistory = [];
+        if (docSnap.exists()) {
+            currentHistory = docSnap.data().continueWatching || [];
+        }
+
+        // Remove if exists (to move to front)
+        const filteredHistory = currentHistory.filter(h => !(h.id == item.id && h.type === item.type));
+
+        // Add to front with new timestamp
+        const newItem = {
+            ...item,
+            lastWatched: Date.now()
+        };
+
+        const newHistory = [newItem, ...filteredHistory].slice(0, 20); // Keep last 20
+
+        await updateDoc(userRef, {
+            continueWatching: newHistory
+        });
+
+        // Refresh UI if on home
+        if (window.location.pathname.includes('index.html')) {
+            loadContinueWatching(currentUser.uid);
+        }
+
+    } catch (e) {
+        console.error("Error updating history:", e);
+    }
+}
+
+
 
 // --- DETAILS PAGE LOGIC ---
 async function loadDetailsPage() {

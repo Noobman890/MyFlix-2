@@ -107,6 +107,16 @@
         <!-- Main Content for Home -->
         <div id="home-content">
             <div class="section-separator hero-separator"></div>
+            <!-- Continue Watching (Hidden by default) -->
+            <div class="row-container" id="continue-watching-container" style="display: none;">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-clock-rotate-left"></i> Continue Watching</h2>
+                </div>
+                <div id="continue-watching-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator" id="continue-watching-separator" style="display: none;"></div>
+
             <div class="row-container">
                 <div class="row-header">
                     <h2 class="row-title"><i class="fa-solid fa-film"></i> New Releases</h2>
@@ -173,11 +183,7 @@
         </div> <!-- End home-content -->
     </main>
 
-    <!-- 4. PLAYER OVERLAY -->
-    <div id="player-overlay" class="overlay">
-        <button class="close-btn" onclick="closePlayer()">✕</button>
-        <iframe id="video-iframe" src="" frameborder="0" allowfullscreen></iframe>
-    </div>
+
 
     <!-- Scripts -->
     <script type="module" src="config.js?v=2"></script>

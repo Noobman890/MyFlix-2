@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playing | MyFlix</title>
+    <!-- Use same style basics but keep it minimal -->
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            /* No scroll bars */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .player-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .back-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .back-nav:hover {
+            opacity: 1;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            backdrop-filter: blur(5px);
+        }
+
+        .player-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 20px;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="back-nav" onclick="history.back()">
+        <div class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </div>
+        <div class="player-logo">MyFlix</div>
+    </div>
+
+    <div class="player-container">
+        <!-- added sandbox exclude 'allow-popups' to block ads -->
+        <iframe id="video-player" src=""
+            sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation"
+            allowfullscreen></iframe>
+    </div>
+
+    <script>
+        // Simple script to parse URL and load video
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            const type = urlParams.get('type');
+            const season = urlParams.get('season');
+            const episode = urlParams.get('episode');
+
+            if (!id || !type) {
+                alert('Invalid media.');
+                history.back();
+                return;
+            }
+
+            const iframe = document.getElementById('video-player');
+            let src = '';
+
+            if (type === 'movie') {
+                src = `https://vidsrc.cc/v2/embed/movie/${id}`;
+            } else {
+                src = `https://vidsrc.cc/v2/embed/tv/${id}/${season || 1}/${episode || 1}`;
+            }
+
+            iframe.src = src;
+        });
+    </script>
+</body>
+
+</html>
