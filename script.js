@@ -874,31 +874,57 @@ onAuthStateChanged(auth, async (user) => {
 async function loadContinueWatching(uid) {
     if (!uid) return;
 
+    console.log("[DEBUG] Loading Continue Watching for:", uid);
+
     try {
         const userRef = doc(db, "users", uid);
         const docSnap = await getDoc(userRef);
 
-        if (docSnap.exists() && docSnap.data().continueWatching) {
-            const history = docSnap.data().continueWatching;
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log("[DEBUG] User Data:", data);
 
-            if (history.length > 0) {
-                // Show Container
-                const container = document.getElementById('continue-watching-container');
-                const separator = document.getElementById('continue-watching-separator');
-                if (container) container.style.display = 'block';
-                if (separator) separator.style.display = 'block';
+            if (data.continueWatching) {
+                const history = data.continueWatching;
+                console.log("[DEBUG] History found, length:", history.length);
 
-                // Render
-                fillShelf(history, 'continue-watching-row', 'movie');
+                if (history.length > 0) {
+                    // Show Container
+                    const container = document.getElementById('continue-watching-container');
+                    const separator = document.getElementById('continue-watching-separator');
+
+                    if (container) {
+                        container.style.display = 'block';
+                        console.log("[DEBUG] Container set to block");
+                    } else {
+                        console.error("[DEBUG] Container element NOT found");
+                    }
+
+                    if (separator) separator.style.display = 'block';
+
+                    // Render
+                    fillShelf(history, 'continue-watching-row', 'movie');
+                } else {
+                    console.log("[DEBUG] History is empty");
+                }
+            } else {
+                console.log("[DEBUG] No continueWatching field");
             }
+        } else {
+            console.log("[DEBUG] User doc does not exist");
         }
     } catch (e) {
-        console.error("Error loading history:", e);
+        console.error("[DEBUG] Error loading history:", e);
     }
 }
 
 async function addToHistory(item) {
-    if (!currentUser) return; // Only track for logged in users
+    if (!currentUser) {
+        console.log("[DEBUG] addToHistory skipped: No user logged in");
+        return;
+    }
+
+    console.log("[DEBUG] addToHistory called for:", item.title);
 
     try {
         const userRef = doc(db, "users", currentUser.uid);
@@ -923,6 +949,7 @@ async function addToHistory(item) {
         await updateDoc(userRef, {
             continueWatching: newHistory
         });
+        console.log("[DEBUG] Firestore updated with new history");
 
         // Refresh UI if on home
         if (window.location.pathname.includes('index.html')) {
@@ -930,7 +957,7 @@ async function addToHistory(item) {
         }
 
     } catch (e) {
-        console.error("Error updating history:", e);
+        console.error("[DEBUG] Error updating history:", e);
     }
 }
 
