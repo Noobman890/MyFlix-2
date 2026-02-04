@@ -913,7 +913,7 @@ async function loadContinueWatching(uid) {
                             <img src="${CONFIG.IMG_URL_SMALL + item.poster_path}" alt="${title}" loading="lazy">
                         </div>
                         <button class="watchlist-remove-btn" onclick="removeFromHistory(event, ${item.id}, '${type}')" title="Remove">
-                            <i class="fa-solid fa-xmark"></i>
+                            <i class="fa-solid fa-trash"></i>
                         </button>
                         <div class="card-info">
                             <h4 class="card-title">${title}</h4>
@@ -953,7 +953,7 @@ window.removeFromHistory = async function (event, id, type) {
 
         if (docSnap.exists()) {
             const currentHistory = docSnap.data().continueWatching || [];
-            const newHistory = currentHistory.filter(h => !(h.id == id && h.type === type));
+            const newHistory = currentHistory.filter(h => !(h.id == id && h.media_type === type));
 
             await updateDoc(userRef, {
                 continueWatching: newHistory
