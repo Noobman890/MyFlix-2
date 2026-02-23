@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyFlix | Premium Streaming</title>
+
+    <!-- iOS / PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyFlix">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Hero Description Wrapper */
+        .hero-desc-wrapper {
+            position: relative;
+            margin-bottom: 28px;
+        }
+
+        /* Hero More button - inline expand link */
+        .hero-more-btn {
+            background: none;
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 7px 0 0 0;
+            margin-top: 8px;
+            display: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.2s;
+            width: 100%;
+            text-align: left;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .hero-more-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hero-more-btn i {
+            font-size: 9px;
+            margin-left: 4px;
+        }
+
+        /* Hero Trailer Button - Premium */
+        .btn-hero-trailer {
+            background: rgba(229, 9, 20, 0.12);
+            color: #fff;
+            border: 1px solid rgba(229, 9, 20, 0.5);
+            border-left: 3px solid #E50914;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px;
+        }
+
+        .btn-hero-trailer:hover {
+            background: rgba(229, 9, 20, 0.28);
+            border-color: #E50914;
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(229, 9, 20, 0.35);
+        }
+
+        .btn-hero-trailer .trailer-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #E50914;
+            box-shadow: 0 0 8px #E50914;
+            animation: trailerPulse 1.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes trailerPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.7);
+            }
+        }
+
+        .btn-hero-trailer i {
+            color: #E50914;
+            filter: drop-shadow(0 0 4px rgba(229, 9, 20, 0.6));
+        }
+
+        /* Shared Trailer Modal */
+        #trailer-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.88);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+
+        #trailer-modal.open {
+            display: flex;
+        }
+
+        .trailer-modal-inner {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+
+        .trailer-modal-inner iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .trailer-close-btn {
+            position: absolute;
+            top: -42px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .trailer-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. NAVIGATION -->
+    <nav class="top-nav" id="navbar">
+        <div style="display: flex; align-items: center;">
+            <div class="logo-container" onclick="location.reload()">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-play"></i>
+                </div>
+                <span class="logo-text">MYFLIX</span>
+            </div>
+
+            <div class="nav-menu">
+                <a href="index.html" id="nav-home" class="nav-link active">Home</a>
+                <a href="explore.html?type=movie&category=now_playing" id="nav-movies" class="nav-link">Movies</a>
+                <a href="explore.html?type=tv&category=on_the_air" id="nav-tv" class="nav-link">TV Shows</a>
+                <a href="explore.html?type=multi&category=korean" id="nav-korean" class="nav-link">Korean</a>
+                <a href="explore.html?type=multi&category=chinese" id="nav-chinese" class="nav-link">Chinese</a>
+                <a href="watchlist.html" id="nav-watchlist" class="nav-link">Watchlist</a>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center;">
+            <div class="search-container" style="position: relative;">
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass" onclick="focusSearch()"></i>
+                    <input type="text" id="movie-search" placeholder="Search movies, TV shows..."
+                        oninput="searchMovies()" autocomplete="off">
+                </div>
+                <!-- Premium Live Search Dropdown -->
+                <div id="search-dropdown" class="search-results-dropdown"></div>
+            </div>
+
+            <div id="user-profile-btn" class="profile-circle">
+                <i id="logged-out-icon" class="fa-regular fa-user"></i>
+                <div id="avatar-container">
+                    <img id="logged-in-avatar" src="" alt="Avatar">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. IMMERSIVE HERO -->
+    <header class="hero-container">
+        <div class="hero-bg" id="hero-bg">
+            <!-- Dynamic Image injected here -->
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+            <div class="hero-badges">
+                <span id="hero-badge" class="badge">
+                    <i class="fa-solid fa-crown"></i> Loading...
+                </span>
+                <span id="hero-rating-badge" class="badge rating-badge">
+                    <!-- Rating info -->
+                </span>
+                <span id="hero-type-badge" class="badge"
+                    style="background: rgba(255,255,255,0.1); border-left: none; color: #aaa;">
+                    <!-- Movie/TV badge -->
+                </span>
+                <span id="hero-lang-badge" class="badge"
+                    style="background: linear-gradient(45deg, var(--accent-gold), var(--accent-amber)); color: black; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);">
+                    <!-- Region badge -->
+                </span>
+            </div>
+            <h1 id="hero-title">Loading...</h1>
+            <div class="hero-desc-wrapper">
+                <p id="hero-desc" class="hero-desc">...</p>
+                <button class="hero-more-btn" id="hero-more-btn" onclick="toggleHeroDesc()">
+                    <span id="hero-more-text">Show more</span> <i class="fa-solid fa-chevron-down"
+                        id="hero-more-icon"></i>
+                </button>
+            </div>
+
+            <div class="hero-buttons">
+                <button id="hero-play-btn" class="btn btn-primary">
+                    <i class="fa-solid fa-play"></i> Play
+                </button>
+                <button id="hero-info-btn" class="btn btn-secondary">
+                    <i class="fa-solid fa-circle-info"></i> More Info
+                </button>
+                <button id="hero-trailer-btn" class="btn btn-hero-trailer" onclick="openTrailerModal()">
+                    <span class="trailer-dot"></span>
+                    <i class="fa-solid fa-film"></i> Trailer
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-indicators" id="hero-indicators">
+            <!-- Dynamic indicators injected here -->
+        </div>
+    </header>
+
+    <!-- 3. MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- Main Content for Home -->
+        <div id="home-content">
+            <div class="section-separator hero-separator"></div>
+            <!-- Continue Watching (Hidden by default) -->
+            <div class="row-container" id="continue-watching-container" style="display: none;">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-clock-rotate-left"></i> Continue Watching</h2>
+                </div>
+                <div id="continue-watching-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator" id="continue-watching-separator" style="display: none;"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-film"></i> New Releases</h2>
+                    <a href="explore.html?type=movie&category=now_playing" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="new-releases-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-fire"></i> Trending Now</h2>
+                    <a href="explore.html?type=movie&category=popular" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="movie-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-tv"></i> TV Shows On Air</h2>
+                    <a href="explore.html?type=tv&category=on_the_air" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="new-tv-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-ranking-star"></i> Popular TV Shows</h2>
+                    <a href="explore.html?type=tv&category=top_rated" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="tv-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-earth-asia"></i> Korean Movies & Shows</h2>
+                    <a href="explore.html?type=multi&category=korean" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="korean-combined-row" class="shelf"></div>
+            </div>
+
+            <div class="section-separator"></div>
+
+            <div class="row-container">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fa-solid fa-dragon"></i> Chinese Movies & Shows</h2>
+                    <a href="explore.html?type=multi&category=chinese" class="view-all">View All <i
+                            class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></a>
+                </div>
+                <div id="chinese-combined-row" class="shelf"></div>
+            </div>
+        </div> <!-- End home-content -->
+    </main>
+
+
+
+    <!-- TRAILER MODAL (shared) -->
+    <div id="trailer-modal" role="dialog" aria-modal="true" aria-label="Trailer"
+        onclick="handleTrailerBackdropClick(event)">
+        <div class="trailer-modal-inner">
+            <button class="trailer-close-btn" onclick="closeTrailerModal()" title="Close"><i
+                    class="fa-solid fa-xmark"></i></button>
+            <iframe id="trailer-iframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="config.js?v=2"></script>
+    <script type="module" src="script.js?v=2"></script>
+
+    <script>
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
+    <!-- 5. MOBILE BOTTOM NAVIGATION -->
+    <div class="mobile-bottom-nav">
+        <a href="index.html" class="bottom-nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="explore.html?type=movie&category=now_playing" class="bottom-nav-item">
+            <i class="fa-solid fa-film"></i>
+            <span>Movies</span>
+        </a>
+        <a href="explore.html?type=tv&category=on_the_air" class="bottom-nav-item">
+            <i class="fa-solid fa-tv"></i>
+            <span>TV Shows</span>
+        </a>
+        <a href="watchlist.html" class="bottom-nav-item">
+            <i class="fa-solid fa-bookmark"></i>
+            <span>Watchlist</span>
+        </a>
+    </div>
+</body>
+
+</html>
