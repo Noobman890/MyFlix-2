@@ -138,37 +138,16 @@ async function loadWatchlistPage() {
             const res = await fetch(`${CONFIG.BASE_URL}/${item.type}/${item.id}?api_key=${CONFIG.API_KEY}`);
             const data = await res.json();
 
-            const card = document.createElement('div');
-            card.className = 'card'; // Standard card class
-
-            const year = (data.release_date || data.first_air_date || "N/A").split('-')[0];
-            const rating = data.vote_average ? data.vote_average.toFixed(1) : "N/A";
-            const lang = (data.original_language || "en").toUpperCase();
-
-            card.innerHTML = `
-                <div class="card-img-container">
-                    <img src="${CONFIG.IMG_URL_SMALL + data.poster_path}" alt="${data.title || data.name}" loading="lazy">
-                    <button class="watchlist-remove-btn" onclick="removeWatchlistItem(${item.id}, '${item.type}', event)" title="Remove from Watchlist">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-                <div class="card-info">
-                    <h4 class="card-title">${data.title || data.name}</h4>
-                    <div class="card-meta">
-                        <span class="rating-badge">${rating}</span>
-                        <span class="card-year">${year}</span>
-                        <span class="lang-badge-small">${lang}</span>
-                        <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">${item.type.toUpperCase()}</span>
-                    </div>
-                </div>
-            `;
-
-            // Add click handler to navigate to details page
-            card.onclick = (e) => {
-                if (!e.target.closest('.watchlist-remove-btn')) {
-                    window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+            const card = createMediaCard(data, item.type, {
+                showRemoveBtn: true,
+                removeBtnClick: `removeWatchlistItem(${item.id}, '${item.type}', event)`,
+                removeBtnTitle: 'Remove from Watchlist',
+                onCardClick: (e) => {
+                    if (!e.target.closest('.watchlist-remove-btn')) {
+                        window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+                    }
                 }
-            };
+            });
 
             watchlistGrid.appendChild(card);
         } catch (error) {
@@ -226,37 +205,16 @@ async function displayFilteredWatchlist(items) {
             const res = await fetch(`${CONFIG.BASE_URL}/${item.type}/${item.id}?api_key=${CONFIG.API_KEY}`);
             const data = await res.json();
 
-            const card = document.createElement('div');
-            card.className = 'card'; // Standard card class
-
-            const year = (data.release_date || data.first_air_date || "N/A").split('-')[0];
-            const rating = data.vote_average ? data.vote_average.toFixed(1) : "N/A";
-            const lang = (data.original_language || "en").toUpperCase();
-
-            card.innerHTML = `
-                <div class="card-img-container">
-                    <img src="${CONFIG.IMG_URL_SMALL + data.poster_path}" alt="${data.title || data.name}" loading="lazy">
-                    <button class="watchlist-remove-btn" onclick="removeWatchlistItem(${item.id}, '${item.type}', event)" title="Remove from Watchlist">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-                <div class="card-info">
-                    <h4 class="card-title">${data.title || data.name}</h4>
-                    <div class="card-meta">
-                        <span class="rating-badge">${rating}</span>
-                        <span class="card-year">${year}</span>
-                        <span class="lang-badge-small">${lang}</span>
-                        <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">${item.type.toUpperCase()}</span>
-                    </div>
-                </div>
-            `;
-
-            // Add click handler to navigate to details page
-            card.onclick = (e) => {
-                if (!e.target.closest('.watchlist-remove-btn')) {
-                    window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+            const card = createMediaCard(data, item.type, {
+                showRemoveBtn: true,
+                removeBtnClick: `removeWatchlistItem(${item.id}, '${item.type}', event)`,
+                removeBtnTitle: 'Remove from Watchlist',
+                onCardClick: (e) => {
+                    if (!e.target.closest('.watchlist-remove-btn')) {
+                        window.location.href = `details.html?id=${item.id}&type=${item.type}`;
+                    }
                 }
-            };
+            });
 
             watchlistGrid.appendChild(card);
         } catch (error) {
@@ -328,6 +286,12 @@ async function startApp() {
             addWatchlistButtonToDetails();
             checkWatchlistStatus();
         }, 1000);
+        return;
+    }
+
+    // Check if we are on person page
+    if (window.location.pathname.includes('person.html')) {
+        loadPersonPage();
         return;
     }
 
@@ -665,35 +629,84 @@ async function loadCombinedLanguageRow(lang, elementId) {
 
 function fillShelf(items, shelfId, defaultType) {
     const shelf = document.getElementById(shelfId);
+    if (!shelf) return;
     shelf.innerHTML = '';
 
     items.forEach(item => {
-        const type = item.media_type || defaultType || 'movie';
-        const title = item.title || item.name;
-        const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
-        const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
-        const lang = (item.original_language || "en").toUpperCase();
+        const card = createMediaCard(item, defaultType);
+        shelf.appendChild(card);
+    });
+}
 
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.onclick = () => window.location.href = `details.html?id=${item.id}&type=${type}`;
+/**
+ * Premium Universal Card Creator
+ * Handles all states: Movie, TV, Watchlist, Continue Watching
+ */
+function createMediaCard(item, defaultType = 'movie', options = {}) {
+    const type = item.media_type || defaultType;
+    const title = item.title || item.name;
+    const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
+    const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
+    const lang = (item.original_language || "en").toUpperCase();
 
-        card.innerHTML = `
-            <div class="card-img-container">
-                <img src="${CONFIG.IMG_URL_SMALL + item.poster_path}" alt="${title}" loading="lazy">
-            </div>
+    // Switch back to poster for portrait feel
+    const imgSrc = item.poster_path ?
+        CONFIG.IMG_URL_SMALL + item.poster_path :
+        'https://via.placeholder.com/200x300?text=No+Poster';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    // Remove Button (Watchlist/History)
+    let removeBtnHtml = '';
+    if (options.showRemoveBtn) {
+        removeBtnHtml = `
+            <button class="watchlist-remove-btn" onclick="${options.removeBtnClick}" title="${options.removeBtnTitle || 'Remove'}">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        `;
+    }
+
+    // Progress Bar (Continue Watching)
+    let progressHtml = '';
+    if (item.progress && item.progress > 0) {
+        progressHtml = `<div class="progress-container"><div class="progress-fill" style="width: ${item.progress}%"></div></div>`;
+    }
+
+    // Episode Tag (TV)
+    let episodeTag = '';
+    if (type === 'tv' && item.season && item.episode) {
+        episodeTag = `<div class="episode-tag">S${item.season} E${item.episode}</div>`;
+    }
+
+    card.innerHTML = `
+        <div class="card-img-container">
+            <img src="${imgSrc}" alt="${title}" loading="lazy">
+            ${episodeTag}
+            ${progressHtml}
             <div class="card-info">
                 <h4 class="card-title">${title}</h4>
                 <div class="card-meta">
-                    <span class="rating-badge">${rating}</span>
+                    <span class="rating-badge"><i class="fa-solid fa-star"></i> ${rating}</span>
                     <span class="card-year">${year}</span>
                     <span class="lang-badge-small">${lang}</span>
-                    <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">HD</span>
+                    <span class="quality-badge">${type === 'tv' ? 'TV' : 'HD'}</span>
                 </div>
             </div>
-        `;
-        shelf.appendChild(card);
-    });
+        </div>
+        ${removeBtnHtml}
+    `;
+
+    // Click Handler
+    card.onclick = (e) => {
+        if (options.onCardClick) {
+            options.onCardClick(e);
+        } else {
+            window.location.href = `details.html?id=${item.id}&type=${type}`;
+        }
+    };
+
+    return card;
 }
 
 // --- GLOBAL UTILS ---
@@ -708,7 +721,7 @@ window.playMedia = async function (id, type, season = 1, episode = 1) {
         const item = {
             id: data.id,
             title: data.title || data.name,
-            poster_path: data.poster_path, // Could be null
+            backdrop_path: data.backdrop_path || data.poster_path, // Fallback to poster if backdrop is null
             vote_average: data.vote_average,
             release_date: data.release_date || data.first_air_date,
             media_type: type
@@ -755,7 +768,7 @@ function displaySearchDropdown(items) {
     dropdown.style.display = 'flex';
 
     // Filter results to show only movies/TV with posters
-    const validItems = items.filter(item => item.media_type !== 'person' && item.poster_path).slice(0, 8);
+    const validItems = items.filter(item => item.media_type !== 'person' && (item.poster_path || item.backdrop_path)).slice(0, 8);
 
     if (validItems.length === 0) {
         dropdown.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">No results found</div>';
@@ -766,7 +779,8 @@ function displaySearchDropdown(items) {
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
         const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
-        const img = item.poster_path ? CONFIG.IMG_URL_SMALL + item.poster_path : 'https://via.placeholder.com/45x65?text=No+Img';
+        const type = item.media_type.toUpperCase();
+        const img = item.backdrop_path ? CONFIG.IMG_URL_SMALL + item.backdrop_path : (item.poster_path ? CONFIG.IMG_URL_SMALL + item.poster_path : 'https://via.placeholder.com/90x50?text=No+Img');
 
         const itemEl = document.createElement('div');
         itemEl.className = 'search-item';
@@ -776,13 +790,15 @@ function displaySearchDropdown(items) {
         };
 
         itemEl.innerHTML = `
-            <img src="${img}" alt="${title}">
+            <div class="search-item-img-wrapper">
+                <img src="${img}" alt="${title}">
+                <div class="search-item-type">${type === 'TV' ? 'TV' : 'HD'}</div>
+            </div>
             <div class="search-item-info">
                 <div class="search-item-title">${title}</div>
                 <div class="search-item-meta">
-                    <span class="search-item-rating"><i class="fa-solid fa-star" style="font-size: 10px; color: #46d369;"></i> ${rating}</span>
-                    <span>${year}</span>
-                    <span style="border: 1px solid #444; padding: 0 4px; border-radius: 2px; font-size: 10px;">${item.media_type.toUpperCase()}</span>
+                    <span class="search-rating"><i class="fa-solid fa-star"></i> ${rating}</span>
+                    <span class="search-year">${year}</span>
                 </div>
             </div>
         `;
@@ -938,32 +954,21 @@ async function loadContinueWatching(uid) {
 
                 history.forEach(item => {
                     const type = item.media_type || 'movie';
-                    const title = item.title || item.name;
-                    const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
-                    const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
-                    const lang = (item.original_language || "en").toUpperCase();
+                    const playUrl = type === 'tv' ?
+                        `player.html?id=${item.id}&type=${type}&season=${item.season || 1}&episode=${item.episode || 1}` :
+                        `player.html?id=${item.id}&type=${type}`;
 
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.onclick = () => window.location.href = `details.html?id=${item.id}&type=${type}`;
+                    const card = createMediaCard(item, type, {
+                        showRemoveBtn: true,
+                        removeBtnClick: `removeFromHistory(event, ${item.id}, '${type}')`,
+                        removeBtnTitle: 'Remove',
+                        onCardClick: (e) => {
+                            if (!e.target.closest('.watchlist-remove-btn')) {
+                                window.location.href = playUrl;
+                            }
+                        }
+                    });
 
-                    card.innerHTML = `
-                        <div class="card-img-container">
-                            <img src="${CONFIG.IMG_URL_SMALL + item.poster_path}" alt="${title}" loading="lazy">
-                        </div>
-                        <button class="watchlist-remove-btn" onclick="removeFromHistory(event, ${item.id}, '${type}')" title="Remove">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                        <div class="card-info">
-                            <h4 class="card-title">${title}</h4>
-                            <div class="card-meta">
-                                <span class="rating-badge">${rating}</span>
-                                <span class="card-year">${year}</span>
-                                <span class="lang-badge-small">${lang}</span>
-                                <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">HD</span>
-                            </div>
-                        </div>
-                    `;
                     shelf.appendChild(card);
                 });
 
@@ -1024,7 +1029,7 @@ async function addToHistory(item) {
         }
 
         // Remove if exists (to move to front)
-        const filteredHistory = currentHistory.filter(h => !(h.id == item.id && h.type === item.type));
+        const filteredHistory = currentHistory.filter(h => !(h.id == item.id && h.media_type === item.media_type));
 
         // Add to front with new timestamp
         const newItem = {
@@ -1066,7 +1071,7 @@ async function loadDetailsPage() {
         // 1. Hero & Meta
         document.title = `${data.title || data.name} | MyFlix`;
         document.getElementById('details-backdrop').innerHTML = `<img src="${CONFIG.IMG_URL + data.backdrop_path}" alt="">`;
-        document.getElementById('details-poster').src = CONFIG.IMG_URL_SMALL + data.poster_path;
+        document.getElementById('details-poster').src = CONFIG.IMG_URL_SMALL + (data.backdrop_path || data.poster_path);
         document.getElementById('details-title').innerText = data.title || data.name;
         // Overview is set by setupDescriptionToggle() below
 
@@ -1100,8 +1105,15 @@ async function loadDetailsPage() {
                 if (!person.profile_path) return;
                 const div = document.createElement('div');
                 div.className = 'cast-item';
+                div.style.cursor = 'pointer';
+                div.onclick = () => window.location.href = `person.html?id=${person.id}`;
                 div.innerHTML = `
-                    <img class="cast-img" src="${CONFIG.IMG_URL_SMALL + person.profile_path}" alt="${person.name}">
+                    <div style="position: relative; overflow: hidden; border-radius: 50%; width: 120px; height: 120px; margin-bottom: 10px; border: 2px solid rgba(255,255,255,0.1); transition: all 0.3s ease;" class="cast-img-wrapper">
+                        <img class="cast-img" src="${CONFIG.IMG_URL_SMALL + person.profile_path}" alt="${person.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; inset: 0; background: rgba(229, 9, 20, 0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;" class="cast-overlay">
+                            <i class="fa-solid fa-arrow-right" style="color: white; font-size: 20px;"></i>
+                        </div>
+                    </div>
                     <div class="cast-name">${person.name}</div>
                     <div class="cast-role">${person.character}</div>
                 `;
@@ -1138,23 +1150,32 @@ async function loadDetailsPage() {
             loadCollection(data.belongs_to_collection.id);
         }
 
-        // 5. Recommendations / Related (Strict Genre Matching)
-        let relatedResults = data.recommendations.results.length > 0 ? data.recommendations.results : data.similar.results;
+        // 5. Recommendations / Related (Quantity & Relevance Upgrade)
+        let recs = data.recommendations.results || [];
+        let similar = data.similar.results || [];
+
+        // Combine and prioritize recommendations, fallback to similar
+        let relatedResults = [...recs, ...similar];
+
+        // Remove duplicates
+        relatedResults = relatedResults.filter((item, index, self) =>
+            index === self.findIndex((t) => t.id === item.id)
+        );
 
         // Filter by matching at least one genre if genres are available
         if (data.genres && data.genres.length > 0) {
             const currentGenreIds = data.genres.map(g => g.id);
-            relatedResults = relatedResults.filter(item =>
-                item.genre_ids && item.genre_ids.some(id => currentGenreIds.includes(id))
-            );
+            relatedResults = relatedResults.sort((a, b) => {
+                const aMatch = a.genre_ids ? a.genre_ids.filter(id => currentGenreIds.includes(id)).length : 0;
+                const bMatch = b.genre_ids ? b.genre_ids.filter(id => currentGenreIds.includes(id)).length : 0;
+                return bMatch - aMatch;
+            });
+
+            // Limit to same type (space show -> space shows)
+            relatedResults = relatedResults.filter(item => item.media_type === type || !item.media_type);
         }
 
-        // If filter removed too many, fallback to original list (top 15)
-        if (relatedResults.length < 3) {
-            relatedResults = data.recommendations.results.length > 0 ? data.recommendations.results : data.similar.results;
-        }
-
-        fillShelf(relatedResults, 'related-list', type);
+        fillShelf(relatedResults.slice(0, 15), 'related-list', type);
 
     } catch (error) {
         console.error("Error loading details:", error);
@@ -1324,26 +1345,19 @@ async function loadEpisodes(seriesId, seasonNum, seasonName) {
                 </div>`;
 
                 card.innerHTML = `
-                    <div class="card-img-container" style="height: 146px; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <div class="card-img-container" style="height: 146px;">
                         ${imgContent}
                         ${playOverlay}
                         ${runtimeBadge}
                     </div>
                     
-                    <div class="card-info" style="padding: 12px 2px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
-                                <span style="font-size: 11px; color: #46d369; font-weight: 700; text-transform: uppercase;">S${seasonNum} E${ep.episode_number}</span>
-                                <span style="font-size: 10px; color: #eee; font-weight: 600; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px;">${ep.air_date || 'TBA'}</span>
-                            </div>
-                            <span style="font-size: 14px; font-weight: 600; color: #fff; line-height: 1.3;">${ep.name}</span>
+                    <div class="episode-info">
+                        <div class="episode-top-row">
+                            <span class="episode-number">S${seasonNum} E${ep.episode_number}</span>
+                            <span class="episode-date">${ep.air_date || 'TBA'}</span>
                         </div>
+                        <h4 class="episode-title">${ep.name}</h4>
                     </div>
-                    
-                    <style>
-                        .card:hover .card-img-container img { opacity: 1; transform: scale(1.05); transition: transform 0.4s ease; }
-                        .card:hover .play-overlay { opacity: 1; }
-                    </style>
                 `;
                 episodesList.appendChild(card);
             });
@@ -1353,5 +1367,50 @@ async function loadEpisodes(seriesId, seasonNum, seasonName) {
         }
     } catch (error) {
         console.error("Error loading episodes:", error);
+    }
+}
+
+async function loadPersonPage() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) return;
+
+    try {
+        const res = await fetch(`${CONFIG.BASE_URL}/person/${id}?api_key=${CONFIG.API_KEY}&append_to_response=combined_credits,external_ids`);
+        const data = await res.json();
+
+        // 1. Profile Info
+        document.title = `${data.name} | MyFlix`;
+        const profileImg = document.getElementById('person-profile-img');
+        if (profileImg) profileImg.src = data.profile_path ? CONFIG.IMG_URL + data.profile_path : 'https://via.placeholder.com/500x750?text=No+Image';
+
+        document.getElementById('person-name').innerText = data.name;
+        document.getElementById('person-bio').innerText = data.biography || "No biography available for this person.";
+
+        // Meta
+        const meta = document.getElementById('person-meta');
+        const birthday = data.birthday ? `Born: ${data.birthday}` : '';
+        const place = data.place_of_birth ? `Place of Birth: ${data.place_of_birth}` : '';
+        const knownFor = data.known_for_department ? `Known For: ${data.known_for_department}` : '';
+
+        meta.innerHTML = `
+            ${birthday ? `<div class="meta-item"><i class="fa-solid fa-cake-candles"></i> ${birthday}</div>` : ''}
+            ${place ? `<div class="meta-item"><i class="fa-solid fa-location-dot"></i> ${place}</div>` : ''}
+            ${knownFor ? `<div class="meta-item"><i class="fa-solid fa-star"></i> ${knownFor}</div>` : ''}
+        `;
+
+        // 2. Known For (Filmography)
+        if (data.combined_credits && data.combined_credits.cast) {
+            // Sort by popularity and filter items with no backdrop
+            const credits = data.combined_credits.cast
+                .filter(item => item.backdrop_path || item.poster_path)
+                .sort((a, b) => b.popularity - a.popularity)
+                .slice(0, 20);
+
+            fillShelf(credits, 'known-for-list');
+        }
+
+    } catch (e) {
+        console.error("Error loading person page:", e);
     }
 }

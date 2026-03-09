@@ -7,222 +7,551 @@
     <title>Playing | MyFlix</title>
     <link rel="stylesheet" href="style.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap"
+        rel="stylesheet" />
     <style>
+        :root {
+            --accent: #E50914;
+            --accent-glow: rgba(229, 9, 20, 0.4);
+            --glass: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-thick: rgba(10, 10, 10, 0.8);
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--dark-bg);
-            color: var(--text-color);
+            background-color: #050505;
+            color: #fff;
             font-family: 'Outfit', sans-serif;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        /* --- Header / Nav --- */
-        .player-nav {
-            display: flex;
-            align-items: center;
-            padding: 15px 4%;
-            background: var(--nav-bg);
-            position: sticky;
+        /* --- Dynamic Backdrop --- */
+        .dynamic-backdrop {
+            position: fixed;
             top: 0;
-            z-index: 100;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .back-btn {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0.8;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .back-btn:hover {
-            opacity: 1;
-            transform: translateX(-5px);
-            color: var(--primary);
-        }
-
-        .logo-text {
-            margin-left: 20px;
-            font-size: 20px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            background: linear-gradient(to right, #fff, #a1a1a1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* --- "Normal Mode" Player Layout --- */
-        .video-wrapper {
+            left: 0;
             width: 100%;
-            max-width: 1100px;
-            /* Constrained width */
-            margin: 30px auto 0;
-            /* Center with spacing */
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.4);
-            background: #000;
-            position: relative;
-            z-index: 10;
+            height: 100%;
+            z-index: -1;
+            transition: opacity 1s ease;
         }
 
-        .video-container {
-            position: relative;
+        .backdrop-image {
             width: 100%;
-            padding-bottom: 56.25%;
-            /* 16:9 Aspect Ratio */
-            height: 0;
-            background: #000;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(80px) brightness(0.4) saturate(1.5);
+            transform: scale(1.1);
         }
 
-        .video-container iframe {
+        .backdrop-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, #050505 90%);
+        }
+
+        /* --- Premium Header --- */
+        .premium-nav {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            align-items: center;
+            padding: 15px 4%;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-pill {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .back-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
+
+        /* --- Middle Title --- */
+        .nav-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .media-title-main {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+            max-width: 400px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .media-subtitle {
+            font-size: 11px;
+            font-weight: 600;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* --- Right Side Server Selection --- */
+        .nav-right {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .header-server-switcher {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            padding: 4px;
+            border-radius: 50px;
+            gap: 2px;
+        }
+
+        .header-server-btn {
+            background: none;
+            border: none;
+            color: #888;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-server-btn i {
+            font-size: 9px;
+        }
+
+        .header-server-btn:hover {
+            color: #fff;
+        }
+
+        .header-server-btn.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.4);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* --- Main Layout --- */
+        .player-main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 4%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .player-viewport {
+            width: 100%;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--glass-border);
+            position: relative;
+        }
+
+        .video-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
             border: none;
         }
 
-        /* --- Content Layout --- */
-        .content-wrapper {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px 0 60px;
-            display: none;
-            /* Hidden as per request */
+        /* --- Loader --- */
+        .page-loader {
+            position: fixed;
+            inset: 0;
+            background: #050505;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
         }
 
-        /* ... existing desktop styles ... */
+        .loader-ring {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s infinite linear;
+        }
 
-        /* Mobile Immersive Mode */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Mobile Immersive Back */
+        .m-back {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        /* --- Mobile Overrides --- */
         @media (max-width: 768px) {
-
-            /* Hide standard nav */
-            .player-nav {
-                display: none !important;
-            }
-
-            /* Full Screen Video Container */
-            .video-wrapper {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                margin: 0;
-                border-radius: 0;
-                z-index: 2000;
-                background: #000;
+            .premium-nav {
                 display: flex;
-                align-items: center;
-                /* Vertical Center */
-                justify-content: center;
+                flex-direction: column;
+                height: auto;
+                padding: 15px;
+                gap: 15px;
             }
 
-            .video-container {
+            .nav-left .back-pill {
+                display: none;
+            }
+
+            .m-back {
+                display: flex;
+            }
+
+            .player-main {
+                margin: 0;
+            }
+
+            .player-viewport {
+                border-radius: 0;
+                height: 100vh;
+                aspect-ratio: auto;
+            }
+
+            .nav-right {
+                justify-content: center;
                 width: 100%;
-                /* Maintain aspect ratio */
             }
 
-            /* Floating Back Button for Mobile */
-            .mobile-back-btn {
-                display: flex !important;
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                z-index: 2001;
-                background: rgba(0, 0, 0, 0.5);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                color: #fff;
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                align-items: center;
-                justify-content: center;
-                backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
-                cursor: pointer;
+            .nav-center .media-title-main {
+                font-size: 14px;
             }
         }
     </style>
 </head>
 
 <body>
-
-    <nav class="player-nav">
-        <button class="back-btn" onclick="history.back()">
-            <i class="fa-solid fa-arrow-left"></i> Back
-        </button>
-        <div class="logo-text">MYFLIX PLAYER</div>
-    </nav>
-
-    <div class="video-wrapper">
-        <!-- Floating Back Button (Mobile Only) -->
-        <div class="mobile-back-btn" onclick="history.back()" style="display: none;">
-            <i class="fa-solid fa-arrow-left"></i>
-        </div>
-
-        <div class="video-container">
-            <!-- Sandbox: Exclude allow-popups to block ads if possible -->
-            <iframe id="video-player" src=""
-                sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation allow-presentation"
-                allowfullscreen></iframe>
-        </div>
+    <div class="page-loader" id="page-loader">
+        <div class="loader-ring"></div>
     </div>
 
+    <div class="dynamic-backdrop">
+        <img src="" id="backdrop-img" class="backdrop-image" alt="">
+        <div class="backdrop-overlay"></div>
+    </div>
 
+    <div class="m-back" onclick="goToDetails()">
+        <i class="fa-solid fa-arrow-left"></i>
+    </div>
+
+    <nav class="premium-nav">
+        <div class="nav-left">
+            <button onclick="goToDetails()" class="back-pill">
+                <i class="fa-solid fa-chevron-left"></i> Back
+            </button>
+        </div>
+
+        <div class="nav-center">
+            <div class="playing-status"
+                style="font-size: 9px; margin-bottom: 2px; color: var(--accent); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 4px; height: 4px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 5px var(--accent);"></span>
+                Now Playing
+            </div>
+            <div class="media-title-main" id="display-title">Loading...</div>
+            <div class="media-subtitle" id="display-subtitle"></div>
+        </div>
+
+        <div class="nav-right">
+            <div class="header-server-switcher">
+                <button class="header-server-btn" id="btn-videasy" onclick="switchSource('videasy')">
+                    <i class="fa-solid fa-bolt"></i> VIDEASY
+                </button>
+                <button class="header-server-btn" id="btn-vidsrc" onclick="switchSource('vidsrc')">
+                    <i class="fa-solid fa-server"></i> VIDSRC
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="player-main">
+        <div class="player-viewport">
+            <div class="video-container">
+                <iframe id="video-player" src="" allowfullscreen></iframe>
+            </div>
+        </div>
+    </main>
 
     <script type="module">
         import CONFIG from './config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Parse URL
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRCZ76Axl5mk5ajLvEXIdtbP9VD4Ni0nQ",
+            authDomain: "myflix-a64b4.firebaseapp.com",
+            projectId: "myflix-a64b4",
+            storageBucket: "myflix-a64b4.firebasestorage.app",
+            messagingSenderId: "101704238237",
+            appId: "1:101704238237:web:6666079060abef8fc8c074"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
         const type = urlParams.get('type');
-        const season = urlParams.get('season') || 1;
-        const episode = urlParams.get('episode') || 1;
+        const season = parseInt(urlParams.get('season') || 1);
+        const episode = parseInt(urlParams.get('episode') || 1);
 
-        // Init
-        async function initPlayer() {
-            if (!id || !type) {
-                alert("Invalid media.");
-                history.back();
-                return;
+        let currentUser = null;
+        let mediaData = null;
+        let startTime = Date.now();
+
+        // Custom Back Navigation
+        window.goToDetails = function () {
+            window.location.href = `details.html?id=${id}&type=${type}`;
+        };
+
+        let currentSource = localStorage.getItem('preferred_source') || 'videasy';
+
+        window.switchSource = function (source) {
+            currentSource = source;
+            localStorage.setItem('preferred_source', source);
+            updatePlayerSource();
+            updateSourceUI();
+        }
+
+        function updateSourceUI() {
+            document.querySelectorAll('.header-server-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${currentSource}`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        function updatePlayerSource() {
+            const iframe = document.getElementById('video-player');
+            let src = '';
+
+            if (currentSource === 'vidsrc') {
+                src = type === 'movie' ?
+                    `https://vidsrc.cc/v2/embed/movie/${id}` :
+                    `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
+            } else if (currentSource === 'videasy') {
+                src = type === 'movie' ?
+                    `https://player.videasy.net/movie/${id}` :
+                    `https://player.videasy.net/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true`;
             }
 
-            // 1. Set Iframe Src
-            const iframe = document.getElementById('video-player');
-            const src = type === 'movie' ?
-                `https://vidsrc.cc/v2/embed/movie/${id}` :
-                `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
-            iframe.src = src;
+            // Using replace() to avoid adding source switches to history stack
+            iframe.contentWindow.location.replace(src);
+        }
 
-            // 2. Fetch Details (Just for Tab Title)
+        // Update History in Firestore
+        async function updateHistory(progress = 0) {
+            if (!currentUser || !mediaData) return;
+
             try {
-                const res = await fetch(`${CONFIG.BASE_URL}/${type}/${id}?api_key=${CONFIG.API_KEY}`);
-                const data = await res.json();
-                const title = data.title || data.name;
-                document.title = `${title} - Playing`;
+                const userRef = doc(db, "users", currentUser.uid);
+                const docSnap = await getDoc(userRef);
 
+                let currentHistory = [];
+                if (docSnap.exists()) {
+                    currentHistory = docSnap.data().continueWatching || [];
+                }
+
+                // Filter out existing item to move to front
+                const filteredHistory = currentHistory.filter(h => !(h.id == id && h.media_type === type));
+
+                const historyItem = {
+                    id: parseInt(id),
+                    title: mediaData.title || mediaData.name,
+                    backdrop_path: mediaData.backdrop_path || mediaData.poster_path,
+                    vote_average: mediaData.vote_average,
+                    release_date: mediaData.release_date || mediaData.first_air_date,
+                    media_type: type,
+                    season: type === 'tv' ? season : null,
+                    episode: type === 'tv' ? episode : null,
+                    progress: progress,
+                    lastWatched: Date.now()
+                };
+
+                const newHistory = [historyItem, ...filteredHistory].slice(0, 20);
+
+                await updateDoc(userRef, {
+                    continueWatching: newHistory
+                });
+                console.log("History updated:", progress + "%");
             } catch (e) {
-                console.error("Error fetching details:", e);
+                console.error("Error updating history:", e);
             }
         }
 
-        // Run
+        // Simple Progress Tracking System
+        // Since we can't get real time from iframe, we track time spent on page
+        // 10 mins spent = ~50% progress for a 20min ep, etc.
+        function trackProgress() {
+            setInterval(() => {
+                if (!currentUser || !mediaData) return;
+
+                const elapsedMinutes = (Date.now() - startTime) / 60000;
+                let estimatedProgress = 0;
+
+                if (type === 'movie') {
+                    estimatedProgress = Math.min(Math.floor((elapsedMinutes / 120) * 100), 95);
+                } else {
+                    estimatedProgress = Math.min(Math.floor((elapsedMinutes / 45) * 100), 95);
+                }
+
+                updateHistory(estimatedProgress);
+            }, 30000); // Every 30 seconds
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user && mediaData) {
+                updateHistory(5); // Initial 5% when they start
+                trackProgress();
+            }
+        });
+
+        async function initPlayer() {
+            if (!id || !type) {
+                alert("Invalid media.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Initial load of Iframe
+            const iframe = document.getElementById('video-player');
+            let initialSrc = '';
+            if (currentSource === 'vidsrc') {
+                initialSrc = type === 'movie' ? `https://vidsrc.cc/v2/embed/movie/${id}` : `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
+            } else {
+                initialSrc = type === 'movie' ? `https://player.videasy.net/movie/${id}` : `https://player.videasy.net/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true`;
+            }
+            iframe.src = initialSrc;
+
+            updateSourceUI();
+
+            try {
+                const res = await fetch(`${CONFIG.BASE_URL}/${type}/${id}?api_key=${CONFIG.API_KEY}`);
+                const data = await res.json();
+                mediaData = data;
+
+                const title = data.title || data.name;
+                document.getElementById('display-title').textContent = title;
+
+                if (type === 'tv') {
+                    document.getElementById('display-subtitle').textContent = `Season ${season} • Episode ${episode}`;
+                } else {
+                    document.getElementById('display-subtitle').textContent = data.release_date ? data.release_date.split('-')[0] : 'Movie';
+                }
+
+                document.title = `${title} - Playing | MyFlix`;
+
+                const backdropImg = document.getElementById('backdrop-img');
+                if (data.backdrop_path) {
+                    backdropImg.src = `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`;
+                }
+
+                if (currentUser) {
+                    updateHistory(5);
+                    trackProgress();
+                }
+
+                setTimeout(() => {
+                    document.getElementById('page-loader').classList.add('hidden');
+                }, 600);
+
+            } catch (e) {
+                console.error("Error fetching details:", e);
+                document.getElementById('page-loader').classList.add('hidden');
+            }
+        }
+
         initPlayer();
     </script>
 </body>

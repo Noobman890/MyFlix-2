@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person Profile | MyFlix</title>
+
+    <!-- iOS / PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyFlix">
+
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .person-hero {
+            position: relative;
+            width: 100%;
+            min-height: 50vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 4% 60px;
+            background: linear-gradient(to bottom, #141414, #000);
+            overflow: hidden;
+        }
+
+        .person-content {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 60px;
+            align-items: flex-start;
+        }
+
+        .person-profile-img {
+            width: 300px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .person-info {
+            flex: 1;
+            color: #fff;
+        }
+
+        .person-name {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            line-height: 1.1;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(to right, #fff, #aaa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .person-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .meta-item i {
+            width: 20px;
+            color: var(--primary);
+        }
+
+        .person-bio {
+            font-size: 16px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+            max-width: 800px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 25px;
+            margin-top: 50px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, var(--glass-border), transparent);
+        }
+
+        @media (max-width: 992px) {
+            .person-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 40px;
+            }
+
+            .person-name {
+                font-size: 40px;
+            }
+
+            .meta-item {
+                justify-content: center;
+            }
+
+            .person-bio {
+                margin: 0 auto 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. NAVIGATION -->
+    <nav class="top-nav" id="navbar">
+        <div style="display: flex; align-items: center;">
+            <div class="logo-container" onclick="window.location.href='index.html'">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-play"></i>
+                </div>
+                <span class="logo-text">MYFLIX</span>
+            </div>
+
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="explore.html?type=movie&category=now_playing" class="nav-link">Movies</a>
+                <a href="explore.html?type=tv&category=on_the_air" class="nav-link">TV Shows</a>
+                <a href="explore.html?type=multi&category=korean" class="nav-link">Korean</a>
+                <a href="explore.html?type=multi&category=chinese" class="nav-link">Chinese</a>
+                <a href="watchlist.html" class="nav-link">Watchlist</a>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center;">
+            <div class="search-container" style="position: relative;">
+                <div class="search-box" id="searchBox">
+                    <i class="fa-solid fa-magnifying-glass" onclick="focusSearch()"></i>
+                    <input type="text" id="movie-search" placeholder="Search..." oninput="searchMovies()"
+                        autocomplete="off">
+                </div>
+                <div id="search-dropdown" class="search-results-dropdown"></div>
+            </div>
+
+            <div id="user-profile-btn" class="profile-circle" style="margin-left: 15px;">
+                <i id="logged-out-icon" class="fa-regular fa-user"></i>
+                <div id="avatar-container">
+                    <img id="logged-in-avatar" src="" alt="Avatar">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. PERSON HERO -->
+    <header class="person-hero">
+        <div class="person-content">
+            <img id="person-profile-img" class="person-profile-img" src="" alt="">
+            <div class="person-info">
+                <h1 class="person-name" id="person-name">Loading...</h1>
+                <div class="person-meta" id="person-meta">
+                    <!-- Meta info injected here -->
+                </div>
+                <div id="person-bio" class="person-bio">
+                    <!-- Bio injected here -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. MAIN CONTENT -->
+    <main style="max-width: 1200px; margin: 0 auto; padding: 0 4% 100px;">
+        <!-- Known For Section -->
+        <div>
+            <h2 class="section-title">Known For</h2>
+            <div id="known-for-list" class="shelf"></div>
+        </div>
+    </main>
+
+    <!-- 4. MOBILE BOTTOM NAV -->
+    <div class="mobile-bottom-nav">
+        <a href="index.html" class="bottom-nav-item">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="explore.html?type=movie&category=now_playing" class="bottom-nav-item">
+            <i class="fa-solid fa-film"></i>
+            <span>Movies</span>
+        </a>
+        <a href="explore.html?type=tv&category=on_the_air" class="bottom-nav-item">
+            <i class="fa-solid fa-tv"></i>
+            <span>TV Shows</span>
+        </a>
+        <a href="watchlist.html" class="bottom-nav-item">
+            <i class="fa-solid fa-bookmark"></i>
+            <span>Watchlist</span>
+        </a>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="config.js?v=2"></script>
+    <script type="module" src="script.js?v=2"></script>
+    <script>
+        // Navbar Scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+        });
+    </script>
+</body>
+
+</html>

@@ -25,42 +25,96 @@
             gap: 25px 15px;
         }
 
-        /* Pagination Styles */
+        /* Modern Pagination Styles */
         .pagination {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
-            padding: 60px 0;
+            gap: 12px;
+            padding: 80px 0 40px;
+            flex-wrap: wrap;
         }
 
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.1);
+        .pagination-btn {
+            background: var(--glass);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 25px;
-            border-radius: 4px;
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 700;
-            transition: 0.3s;
-            backdrop-filter: blur(8px);
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 100px;
+            justify-content: center;
         }
 
-        .nav-btn:hover:not(:disabled) {
-            background: white;
-            color: black;
-            transform: scale(1.05);
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .nav-btn:disabled {
-            opacity: 0.2;
+        .pagination-btn.nav-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .pagination-btn.nav-primary:hover:not(:disabled) {
+            filter: brightness(1.2);
+            box-shadow: 0 0 25px var(--accent-glow);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
             cursor: not-allowed;
+            filter: grayscale(1);
         }
 
-        #page-num {
-            font-size: 16px;
+        .page-numbers {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .page-number {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: white;
             font-weight: 600;
-            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-number:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .page-number.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: scale(1.1);
+        }
+
+        .page-dots {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 800;
+            padding: 0 5px;
         }
 
         .back-btn {
@@ -226,12 +280,14 @@
         </div>
 
         <div class="pagination">
-            <button id="prev-btn" class="nav-btn" onclick="changePage(-1)">
-                <i class="fa-solid fa-chevron-left"></i> PREV
+            <button id="prev-btn" class="pagination-btn" onclick="changePage(-1)">
+                <i class="fa-solid fa-arrow-left"></i> Previous
             </button>
-            <span id="page-num">Page 1</span>
-            <button id="next-btn" class="nav-btn" onclick="changePage(1)">
-                NEXT <i class="fa-solid fa-chevron-right"></i>
+            <div id="page-numbers-container" class="page-numbers">
+                <!-- Page numbers injected here -->
+            </div>
+            <button id="next-btn" class="pagination-btn nav-primary" onclick="changePage(1)">
+                Next <i class="fa-solid fa-arrow-right"></i>
             </button>
         </div>
     </main>
@@ -295,6 +351,7 @@
         const category = params.get('category') || 'popular';
 
         let currentPage = 1;
+        let totalPages = 1;
 
         async function loadGenres() {
             try {
@@ -330,6 +387,7 @@
 
         async function loadExplorePage(page) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            currentPage = page;
 
             const genre = document.getElementById('genre-filter').value;
             const sort = document.getElementById('sort-filter').value;
@@ -358,11 +416,9 @@
             if (category === 'chinese') displayTitle = "Chinese";
 
             document.getElementById('explore-title').innerText = `${displayTitle} ${activeType === 'multi' ? 'Movies & Shows' : (activeType === 'movie' ? 'Movies' : 'TV Shows')}`;
-            document.getElementById('page-num').innerText = `Page ${page}`;
 
             try {
                 let results = [];
-                let totalPages = 1;
 
                 if (activeType === 'multi') {
                     // Fetch both movie and TV
@@ -388,47 +444,97 @@
                     results = [...movies, ...tvs].sort((a, b) => b.popularity - a.popularity);
                     totalPages = Math.max(mData.total_pages || 1, tData.total_pages || 1);
                 } else {
-                    let apiUrl;
+                    let apiUrl1, apiUrl2;
                     const isDiscoverNeeded = genre || sort !== 'popularity.desc' || category === 'korean' || category === 'chinese' || year;
 
-                    if (isDiscoverNeeded) {
-                        apiUrl = `${CONFIG.BASE_URL}/discover/${activeType}?api_key=${CONFIG.API_KEY}&page=${page}&sort_by=${sort}`;
-                        if (genre) apiUrl += `&with_genres=${genre}`;
-                        if (year) {
-                            apiUrl += activeType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
-                        }
-                        if (category === 'korean') apiUrl += `&with_original_language=ko`;
-                        if (category === 'chinese') apiUrl += `&with_original_language=zh`;
-
-                        if (category === 'now_playing' || category === 'on_the_air') {
-                            const now = new Date();
-                            const past = new Date();
-                            past.setMonth(now.getMonth() - 6);
-                            const nowStr = now.toISOString().split('T')[0];
-                            const pastStr = past.toISOString().split('T')[0];
-                            if (activeType === 'movie') {
-                                apiUrl += `&release_date.gte=${pastStr}&release_date.lte=${nowStr}`;
-                            } else {
-                                apiUrl += `&first_air_date.gte=${pastStr}&first_air_date.lte=${nowStr}`;
+                    const getUrl = (p) => {
+                        let url;
+                        if (isDiscoverNeeded) {
+                            url = `${CONFIG.BASE_URL}/discover/${activeType}?api_key=${CONFIG.API_KEY}&page=${p}&sort_by=${sort}`;
+                            if (genre) url += `&with_genres=${genre}`;
+                            if (year) {
+                                url += activeType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
                             }
-                        }
-                    } else {
-                        apiUrl = `${CONFIG.BASE_URL}/${activeType}/${category}?api_key=${CONFIG.API_KEY}&page=${page}`;
-                    }
+                            if (category === 'korean') url += `&with_original_language=ko`;
+                            if (category === 'chinese') url += `&with_original_language=zh`;
 
-                    const res = await fetch(apiUrl);
-                    const data = await res.json();
-                    results = data.results;
-                    totalPages = data.total_pages;
+                            if (category === 'now_playing' || category === 'on_the_air') {
+                                const now = new Date();
+                                const past = new Date();
+                                past.setMonth(now.getMonth() - 6);
+                                const nowStr = now.toISOString().split('T')[0];
+                                const pastStr = past.toISOString().split('T')[0];
+                                if (activeType === 'movie') {
+                                    url += `&release_date.gte=${pastStr}&release_date.lte=${nowStr}`;
+                                } else {
+                                    url += `&first_air_date.gte=${pastStr}&first_air_date.lte=${nowStr}`;
+                                }
+                            }
+                        } else {
+                            url = `${CONFIG.BASE_URL}/${activeType}/${category}?api_key=${CONFIG.API_KEY}&page=${p}`;
+                        }
+                        return url;
+                    };
+
+                    apiUrl1 = getUrl(page * 2 - 1);
+                    apiUrl2 = getUrl(page * 2);
+
+                    const [res1, res2] = await Promise.all([fetch(apiUrl1), fetch(apiUrl2)]);
+                    const data1 = await res1.json();
+                    const data2 = await res2.json();
+
+                    results = [...(data1.results || []), ...(data2.results || [])];
+                    totalPages = Math.floor((data1.total_pages || 1) / 2);
                 }
 
-                document.getElementById('prev-btn').disabled = (page === 1);
-                document.getElementById('next-btn').disabled = (page >= totalPages);
-
+                updatePaginationUI(page, totalPages);
                 displayResults(results);
             } catch (error) {
                 console.error("Error loading explore page:", error);
             }
+        }
+
+        function updatePaginationUI(page, total) {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const container = document.getElementById('page-numbers-container');
+
+            prevBtn.disabled = (page === 1);
+            nextBtn.disabled = (page >= total);
+
+            container.innerHTML = '';
+
+            const range = 2; // How many numbers around current page
+            const pages = [];
+
+            // Always show first page
+            pages.push(1);
+
+            if (page > range + 2) pages.push('...');
+
+            for (let i = Math.max(2, page - range); i <= Math.min(total - 1, page + range); i++) {
+                pages.push(i);
+            }
+
+            if (page < total - range - 1) pages.push('...');
+
+            // Always show last page if more than 1
+            if (total > 1) pages.push(total);
+
+            pages.forEach(p => {
+                if (p === '...') {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-dots';
+                    dots.innerText = '...';
+                    container.appendChild(dots);
+                } else {
+                    const numBtn = document.createElement('div');
+                    numBtn.className = `page-number ${p === page ? 'active' : ''}`;
+                    numBtn.innerText = p;
+                    numBtn.onclick = () => loadExplorePage(p);
+                    container.appendChild(numBtn);
+                }
+            });
         }
 
         function displayResults(items) {
@@ -449,14 +555,14 @@
                 card.innerHTML = `
                     <div class="card-img-container">
                         <img src="${CONFIG.IMG_URL_SMALL + item.poster_path}" alt="${title}" loading="lazy">
-                    </div>
-                    <div class="card-info">
-                        <h4 class="card-title">${title}</h4>
-                        <div class="card-meta">
-                            <span class="rating-badge">${rating}</span>
-                            <span class="card-year">${year}</span>
-                            <span class="lang-badge-small">${lang}</span>
-                            <span style="border: 1px solid #666; padding: 0 4px; border-radius: 2px; font-size: 9px;">${itemType.toUpperCase()}</span>
+                        <div class="card-info">
+                            <h4 class="card-title">${title}</h4>
+                            <div class="card-meta">
+                                <span class="rating-badge"><i class="fa-solid fa-star"></i> ${rating}</span>
+                                <span class="card-year">${year}</span>
+                                <span class="lang-badge-small">${lang}</span>
+                                <span class="quality-badge">${itemType === 'tv' ? 'TV' : 'HD'}</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -517,21 +623,26 @@
                 const title = item.title || item.name;
                 const year = (item.release_date || item.first_air_date || "N/A").split('-')[0];
                 const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
-                const img = CONFIG.IMG_URL_SMALL + item.poster_path;
+                const type = item.media_type.toUpperCase();
+                const img = item.backdrop_path ? CONFIG.IMG_URL_SMALL + item.backdrop_path : (item.poster_path ? CONFIG.IMG_URL_SMALL + item.poster_path : 'https://via.placeholder.com/90x50?text=No+Img');
+
                 const itemEl = document.createElement('div');
                 itemEl.className = 'search-item';
                 itemEl.onclick = () => {
                     window.location.href = `details.html?id=${item.id}&type=${item.media_type}`;
                     dropdown.style.display = 'none';
                 };
+
                 itemEl.innerHTML = `
-                    <img src="${img}" alt="${title}">
+                    <div class="search-item-img-wrapper">
+                        <img src="${img}" alt="${title}">
+                        <div class="search-item-type">${type === 'TV' ? 'TV' : 'HD'}</div>
+                    </div>
                     <div class="search-item-info">
                         <div class="search-item-title">${title}</div>
                         <div class="search-item-meta">
-                            <span style="color:#46d369;">★ ${rating}</span>
-                            <span>${year}</span>
-                            <span style="border: 1px solid #444; padding: 0 4px; border-radius: 2px; font-size: 10px;">${item.media_type.toUpperCase()}</span>
+                            <span class="search-rating"><i class="fa-solid fa-star"></i> ${rating}</span>
+                            <span class="search-year">${year}</span>
                         </div>
                     </div>
                 `;
