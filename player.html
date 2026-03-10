@@ -391,9 +391,11 @@
         let mediaData = null;
         let startTime = Date.now();
 
-        // Custom Back Navigation
+        // Custom Back Navigation — passes season/episode so details page restores the right episode
         window.goToDetails = function () {
-            window.location.href = `details.html?id=${id}&type=${type}`;
+            let url = `details.html?id=${id}&type=${type}`;
+            if (type === 'tv') url += `&season=${season}&episode=${episode}`;
+            window.location.href = url;
         };
 
         let currentSource = localStorage.getItem('preferred_source') || 'videasy';
@@ -419,14 +421,15 @@
                 src = type === 'movie' ?
                     `https://vidsrc.cc/v2/embed/movie/${id}` :
                     `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
+                iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-top-navigation');
             } else if (currentSource === 'videasy') {
                 src = type === 'movie' ?
                     `https://player.videasy.net/movie/${id}` :
                     `https://player.videasy.net/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true`;
+                iframe.removeAttribute('sandbox');
             }
 
-            // Using replace() to avoid adding source switches to history stack
-            iframe.contentWindow.location.replace(src);
+            iframe.src = src;
         }
 
         // Update History in Firestore
@@ -509,10 +512,21 @@
             let initialSrc = '';
             if (currentSource === 'vidsrc') {
                 initialSrc = type === 'movie' ? `https://vidsrc.cc/v2/embed/movie/${id}` : `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`;
+                // Block VidSrc popups and redirects via sandbox
+                iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-top-navigation');
             } else {
                 initialSrc = type === 'movie' ? `https://player.videasy.net/movie/${id}` : `https://player.videasy.net/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true`;
+                // Videasy detects sandbox — no sandbox, but block popups via JS
+                iframe.removeAttribute('sandbox');
             }
             iframe.src = initialSrc;
+
+            // JS-based popup blocker for Videasy (blocks window.open from iframe via beforeunload trick)
+            window.addEventListener('blur', function() {
+                if (currentSource === 'videasy') {
+                    setTimeout(() => window.focus(), 50);
+                }
+            });
 
             updateSourceUI();
 

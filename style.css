@@ -40,6 +40,10 @@ input {
     user-select: text;
 }
 
+.mobile-bottom-nav {
+    display: none;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
@@ -92,32 +96,54 @@ input {
 
 .logo-icon {
     position: relative;
-    width: 32px;
-    height: 32px;
-    background: var(--primary);
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #E50914 0%, #b20710 60%, #8b0000 100%);
     border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 0 20px var(--accent-glow);
     overflow: hidden;
+    animation: logoPulse 3s ease-in-out infinite;
+    transition: all 0.3s ease;
 }
 
-.logo-icon i {
+.logo-icon:hover {
+    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7);
+    transform: scale(1.1);
+}
+
+.logo-m {
     color: white;
-    font-size: 14px;
-    margin-left: 2px;
-    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+    font-size: 20px;
+    font-weight: 900;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -1px;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+    z-index: 1;
 }
 
 .logo-icon::after {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
+    left: -100%;
     width: 100%;
-    height: 50%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), transparent);
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: logoSheen 4s 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+    0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+    50% { box-shadow: 0 0 35px rgba(229, 9, 20, 0.6); }
+}
+
+@keyframes logoSheen {
+    0% { left: -100%; }
+    30% { left: 100%; }
+    100% { left: 100%; }
 }
 
 .logo-text {
@@ -127,10 +153,18 @@ input {
     color: #fff;
     text-transform: uppercase;
     font-family: 'Outfit', sans-serif;
-    background: linear-gradient(to right, #ffffff 30%, #a1a1a1 100%);
+    background: linear-gradient(90deg, #fff 0%, #fff 40%, #E50914 50%, #fff 60%, #fff 100%);
+    background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    animation: textShimmer 5s 3s ease-in-out infinite;
+}
+
+@keyframes textShimmer {
+    0% { background-position: 100% 0; }
+    30% { background-position: -100% 0; }
+    100% { background-position: -100% 0; }
 }
 
 /* Nav Menu */
@@ -1053,10 +1087,6 @@ input {
     /* Hide the old menu row from the top nav container */
     .nav-menu {
         display: none !important;
-    }
-
-    .mobile-bottom-nav {
-        display: none;
     }
 
     /* Modern Bottom Navigation Dock */

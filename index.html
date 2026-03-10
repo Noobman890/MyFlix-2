@@ -166,7 +166,7 @@
         <div style="display: flex; align-items: center;">
             <div class="logo-container" onclick="location.reload()">
                 <div class="logo-icon">
-                    <i class="fa-solid fa-play"></i>
+                    <span class="logo-m">M</span>
                 </div>
                 <span class="logo-text">MYFLIX</span>
             </div>
@@ -343,7 +343,8 @@
         <div class="trailer-modal-inner">
             <button class="trailer-close-btn" onclick="closeTrailerModal()" title="Close"><i
                     class="fa-solid fa-xmark"></i></button>
-            <iframe id="trailer-iframe" src="" allow="autoplay; fullscreen" allowfullscreen></iframe>
+            <iframe id="trailer-iframe" src="" allow="autoplay; fullscreen" allowfullscreen
+                sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation"></iframe>
         </div>
     </div>
 
